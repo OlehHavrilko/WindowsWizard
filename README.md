@@ -53,6 +53,7 @@
 | Источники и границы подтверждения | [SOURCES](docs/SOURCES.md) |
 | Чем проект отличается от AtlasOS / ReviOS и чего им не хватает | [COMPETITORS](docs/COMPETITORS.md), [DIFFERENTIATORS](docs/DIFFERENTIATORS.md) |
 | Toolbox: твики, драйверы, каталог программ после установки | [TOOLBOX](docs/TOOLBOX.md), [TOOLS-CATALOG](docs/TOOLS-CATALOG.md) |
+| Фирменный стиль: обои, тема, знак, интерфейс Toolbox | [BRANDING](docs/BRANDING.md) |
 | Какие твики берём у WinUtil, AtlasOS, ReviOS и на какой машине меряем | [TWEAKS-BASELINE](docs/TWEAKS-BASELINE.md), [REFERENCE-MACHINE](docs/REFERENCE-MACHINE.md) |
 
 ## Структура репозитория

@@ -72,6 +72,12 @@
 - `ROADMAP`: v0.1 — движок, v0.2 — playbook-обёртка, v0.3 — ISO-путь; Toolbox после v0.2.
 - `DECISIONS`: D-027 — движок на .NET 10, self-contained; каталог прогонов — `%ProgramData%\WizardOS\`.
 
+**Фирменный стиль (2026-11-11):**
+
+- `docs/BRANDING.md` — механизмы оформления Windows и решение по каждому, концепция «Ясная магия», палитра с проверенным контрастом, типографика, знак, обои, карточки `brand.*`, откат, стиль Toolbox, этапы B-0…B-3.
+- `DECISIONS`: D-028 — бренд через карточки движка, только свои ассеты, без замены системных файлов.
+- `.claude/agents/designer.md` — агент реализации стиля (Sonnet, medium).
+
 **Инфраструктура:**
 
 - Репозиторий — <https://github.com/OlehHavrilko/WindowsWizard> (public, `main`). Каркас и документация залиты в `main` (11.11.2026); локальная копия — `D:\Projects\codex\winoptimizer` ([DECISIONS](DECISIONS.md) D-013).
