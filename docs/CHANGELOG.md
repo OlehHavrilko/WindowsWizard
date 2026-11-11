@@ -27,7 +27,8 @@
 
 **Инфраструктура:**
 
-- Репозиторий проекта — <https://github.com/OlehHavrilko/WindowsWizard> (public, `main`), локальная копия — `D:\Projects\codex\winoptimizer`. Git в каталоге не инициализирован, удалённо пока только автосозданный `README.md` (см. [DECISIONS](DECISIONS.md) D-013).
+- Репозиторий — <https://github.com/OlehHavrilko/WindowsWizard> (public, `main`). Каркас и документация залиты в `main` (коммит `0552507`, 11.11.2026); локальная копия — `D:\Projects\codex\winoptimizer` ([DECISIONS](DECISIONS.md) D-013).
+- `.gitattributes` — канонизация переводов строк (LF) и пометка бинарных артефактов.
 
 **Не добавлено (намеренно):** YAML-контент, `playbook.conf`, скрипты, реальные параметры.
 

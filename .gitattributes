@@ -1,0 +1,12 @@
+# Канонизация переводов строк: в репозитории и в рабочей копии — LF.
+# Документация и YAML не должны зависеть от настроек core.autocrlf.
+* text=auto eol=lf
+
+# Бинарные артефакты не трогать
+*.png binary
+*.jpg binary
+*.apbx binary
+*.7z binary
+*.iso binary
+*.wim binary
+*.exe binary

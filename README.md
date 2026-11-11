@@ -3,7 +3,7 @@
 **Статус:** документированный каркас; исполняемого кода, playbook-контента и результатов прогонов нет. Теоретическая ревизия — [REVIEW](docs/REVIEW.md); переход к реализации ограничен условиями [ROADMAP](docs/ROADMAP.md).
 **Цель:** один управляемый AME Playbook для чистой установки Windows 11 26H2 Pro x64 — без готовых сборок, без удаления защитных механизмов, с проверяемым результатом и рабочим откатом.
 **Репозиторий:** <https://github.com/OlehHavrilko/WindowsWizard> — public, ветка `main`.
-**Локальная копия:** `D:\Projects\codex\winoptimizer` (имя каталога историческое, git в нём пока не инициализирован — заливка по отдельной команде, см. [DECISIONS](docs/DECISIONS.md) D-013).
+**Локальная копия:** `D:\Projects\codex\winoptimizer` (имя каталога историческое; git инициализирован, ветка `main` синхронизирована с origin — см. [DECISIONS](docs/DECISIONS.md) D-013).
 
 ---
 
@@ -75,7 +75,7 @@ WindowsWizard/                  (локальный каталог: winoptimizer
 | Утверждение | Статус |
 |---|---|
 | Репозиторий `OlehHavrilko/WindowsWizard`: public, ветка `main` | проверено `gh repo view` 11.11.2026 |
-| Удалённо лежит только автосозданный `README.md`, документация ещё не залита | проверено `gh api .../contents` 11.11.2026 |
+| Документация залита в `main` | коммит `0552507`, 11.11.2026 |
 | `.apbx` = 7z с паролем `malte` | проверено по докам AME |
 | Структура `playbook.conf` + `Configuration/main.yml` + `Configuration/Tasks/*.yml` + `Executables/` | проверено по докам AME |
 | Набор действий (`!registryValue`, `!service`, `!appx`, `!systemPackage`, `!task`, …) | проверено по докам AME |
