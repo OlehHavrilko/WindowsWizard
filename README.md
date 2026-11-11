@@ -49,6 +49,8 @@
 | Требования к реализации: план, baseline, журнал, остановка, откат | [EXECUTION-CONTRACT](docs/EXECUTION-CONTRACT.md) |
 | Ревизия каркаса: что уточнено и что осталось до начала реализации | [REVIEW](docs/REVIEW.md) |
 | Источники и границы подтверждения | [SOURCES](docs/SOURCES.md) |
+| Чем проект отличается от AtlasOS / ReviOS и чего им не хватает | [COMPETITORS](docs/COMPETITORS.md), [DIFFERENTIATORS](docs/DIFFERENTIATORS.md) |
+| Toolbox: твики, драйверы, каталог программ после установки | [TOOLBOX](docs/TOOLBOX.md), [TOOLS-CATALOG](docs/TOOLS-CATALOG.md) |
 
 ## Структура репозитория
 
