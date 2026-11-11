@@ -4,6 +4,18 @@
 
 ---
 
+## v0.1-dev — движок: CLI, Windows-доступ, первые твики
+
+**Добавлено:**
+
+- `src/WizardOS.Core/Windows/` — `RegistryAccess`, `ServiceAccess`.
+- `src/WizardOS.Cli/` — приложение `wizardos` (`plan|apply|verify|revert`).
+- `catalog/` (YAML, YamlDotNet) — `privacy.telemetry`, `shell.widgets`, `consumer.ads`; JSON-загрузка карточек удалена; запретный список закрывает `Services\<служба>`, Windows Advanced Threat Protection, Microsoft\Virtualization.
+- `docs/ENGINE.md` — описание движка.
+- Целевая платформа — .NET 10 (D-027); `RunLock` — замок параллельного прогона (apply/revert, код 2 при занятом); команда `report [--run id|latest]`; на Windows ACL каталога прогона — только Administrators и SYSTEM; CI `.github/workflows/ci.yml`.
+
+---
+
 ## v0.0 — документация и структура
 
 **Дата:** 2026-11-11

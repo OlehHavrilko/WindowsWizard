@@ -1,0 +1,23 @@
+id: consumer.ads
+title: "Потребительские рекомендации и реклама выключены"
+verdict: Core
+stability: Moderate
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Отключить автоустановку рекомендованных приложений и рекламные предложения (Windows Consumer Features, Spotlight/Soft Landing)."
+evidence: "Политики HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent: DisableWindowsConsumerFeatures = 1 и DisableSoftLanding = 1; после первого входа число предустановленных рекламных приложений = 0."
+actions:
+  - id: disable-consumer-features
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableWindowsConsumerFeatures
+      kind: DWord
+      data: "1"
+  - id: disable-soft-landing
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableSoftLanding
+      kind: DWord
+      data: "1"
