@@ -66,6 +66,12 @@
 - `README`, `BUILD`, `ROADMAP` приведены к новому имени и порядку работ.
 - `.claude/agents/`: роли по частям работы — `architect` (Opus, среднее усилие), `engine-coder`, `playbook-author`, `tester` (Sonnet, среднее), `executor` (Haiku, низкое).
 
+**Архитектура под движок (2026-11-11):**
+
+- `ARCHITECTURE` §3–8 переписаны под D-023: слои (каталог → движок → playbook / Toolbox), команды и коды возврата, обработчики, хранение, фазы playbook, адаптация к обновлениям.
+- `ROADMAP`: v0.1 — движок, v0.2 — playbook-обёртка, v0.3 — ISO-путь; Toolbox после v0.2.
+- `DECISIONS`: D-027 — движок на .NET 10, self-contained; каталог прогонов — `%ProgramData%\WizardOS\`.
+
 **Инфраструктура:**
 
 - Репозиторий — <https://github.com/OlehHavrilko/WindowsWizard> (public, `main`). Каркас и документация залиты в `main` (11.11.2026); локальная копия — `D:\Projects\codex\winoptimizer` ([DECISIONS](DECISIONS.md) D-013).
