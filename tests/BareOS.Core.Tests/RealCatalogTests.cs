@@ -1,9 +1,9 @@
-using WizardOS.Core;
-using WizardOS.Core.Engine;
-using WizardOS.Core.Windows;
+using BareOS.Core;
+using BareOS.Core.Engine;
+using BareOS.Core.Windows;
 using Xunit;
 
-namespace WizardOS.Core.Tests;
+namespace BareOS.Core.Tests;
 
 public class RealCatalogTests
 {

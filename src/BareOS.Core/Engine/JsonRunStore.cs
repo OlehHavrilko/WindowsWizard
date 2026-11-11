@@ -3,7 +3,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text.Json;
 
-namespace WizardOS.Core.Engine;
+namespace BareOS.Core.Engine;
 
 /// <summary>Файловое хранилище прогонов: root/&lt;baselineId&gt;/baseline.json, root/&lt;runId&gt;/report.json и journal.jsonl.</summary>
 public sealed class JsonRunStore : IRunStore

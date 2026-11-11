@@ -1,4 +1,4 @@
-# Движок WizardOS
+# Движок Bare OS
 
 Консольный движок на .NET 8: читает карточки твиков, строит план, применяет, проверяет и откатывает изменения. Решения: D-023, `EXECUTION-CONTRACT.md`, `REVERT.md`, `VERIFICATION.md`.
 
@@ -6,20 +6,20 @@
 
 | Путь | Что |
 |---|---|
-| `src/WizardOS.Core/Contracts.cs` | контракты: `Tweak`, `Plan`, `Baseline`, `Report`, `IRegistryAccess`, `IServiceAccess`, `IRunStore`, `ITweakEngine` |
-| `src/WizardOS.Core/Engine/` | `TweakEngine`, `JsonRunStore`, `TweakCatalog` |
-| `src/WizardOS.Core/Windows/` | `RegistryAccess` (Microsoft.Win32.Registry), `ServiceAccess` (чтение из реестра, запись через `sc.exe config`); вне Windows бросают `PlatformNotSupportedException` |
-| `src/WizardOS.Cli/` | приложение `wizardos` |
+| `src/BareOS.Core/Contracts.cs` | контракты: `Tweak`, `Plan`, `Baseline`, `Report`, `IRegistryAccess`, `IServiceAccess`, `IRunStore`, `ITweakEngine` |
+| `src/BareOS.Core/Engine/` | `TweakEngine`, `JsonRunStore`, `TweakCatalog` |
+| `src/BareOS.Core/Windows/` | `RegistryAccess` (Microsoft.Win32.Registry), `ServiceAccess` (чтение из реестра, запись через `sc.exe config`); вне Windows бросают `PlatformNotSupportedException` |
+| `src/BareOS.Cli/` | приложение `bareos` |
 | `catalog/**/*.yml` | карточки твиков |
 
 ## Команды
 
 ```
-wizardos <plan|apply|verify|revert> [--catalog <dir>] [--data <dir>] [--only id,id] [--json]
+bareos <plan|apply|verify|revert> [--catalog <dir>] [--data <dir>] [--only id,id] [--json]
 ```
 
 - `--catalog` — каталог карточек, по умолчанию `./catalog`.
-- `--data` — каталог прогонов, по умолчанию `%ProgramData%\WizardOS\runs`.
+- `--data` — каталог прогонов, по умолчанию `%ProgramData%\BareOS\runs`.
 - `--only` — только перечисленные id твиков.
 - `--json` — отчёт в JSON; иначе таблица «Статус / Твик / До / После / Ожидалось».
 - `plan` только читает систему. `apply` и `revert` требуют прав администратора (иначе код 2).
@@ -70,10 +70,10 @@ status: proposed         # proposed | accepted | verified | rejected
 
 1. Создать `catalog/<id>.yml` по схеме выше. Без измеримого `evidence` твик не принимается.
 2. Действия — только то, что умеют `registry` и `service`; для каждого заранее ясно значение «после».
-3. Проверить: `wizardos plan --only <id>`, затем `apply`, `verify`, `revert` на тестовой машине Windows.
+3. Проверить: `bareos plan --only <id>`, затем `apply`, `verify`, `revert` на тестовой машине Windows.
 4. Отметить в `docs/CHANGELOG.md`.
 
 
 ## Валидация каталога
 
-`wizardos validate --catalog catalog` загружает все карточки и проверяет их тем же кодом, что `plan/apply` (обязательные поля, `evidence`, уникальность id, запретный список Defender/Hyper-V/WSL, формат действий). Код выхода 2 при ошибке. Запускается в CI. Для редакторов (подсказки и подсветка в VS Code) лежит JSON-схема `catalog/tweak.schema.json`; источником истины остаётся код движка.
+`bareos validate --catalog catalog` загружает все карточки и проверяет их тем же кодом, что `plan/apply` (обязательные поля, `evidence`, уникальность id, запретный список Defender/Hyper-V/WSL, формат действий). Код выхода 2 при ошибке. Запускается в CI. Для редакторов (подсказки и подсветка в VS Code) лежит JSON-схема `catalog/tweak.schema.json`; источником истины остаётся код движка.

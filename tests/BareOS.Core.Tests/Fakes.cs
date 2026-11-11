@@ -1,7 +1,7 @@
-using WizardOS.Core;
-using WizardOS.Core.Engine;
+using BareOS.Core;
+using BareOS.Core.Engine;
 
-namespace WizardOS.Core.Tests;
+namespace BareOS.Core.Tests;
 
 public sealed class FakeRegistry : IRegistryAccess
 {
@@ -97,7 +97,7 @@ public sealed class Rig
     private ITweakEngine Make(string runId)
         => new TweakEngine(new EngineEnv(Reg, Svc, () => _now, Tasks), _store, runId);
 
-    /// <summary>Новый прогон (новый процесс wizardos) на том же хранилище и той же «системе», на минуту позже.</summary>
+    /// <summary>Новый прогон (новый процесс bareos) на том же хранилище и той же «системе», на минуту позже.</summary>
     public ITweakEngine NextRun(string runId)
     {
         _now = _now.AddMinutes(1);

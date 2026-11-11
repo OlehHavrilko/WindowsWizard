@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace WizardOS.Core.Engine;
+namespace BareOS.Core.Engine;
 
 /// <summary>
 /// Межпроцессный замок корня прогонов: файл <c>.lock</c>, открытый с FileShare.None, внутри PID и время.

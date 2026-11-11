@@ -4,6 +4,13 @@
 
 ---
 
+## v0.1-dev — переименование и аудит
+
+- Продукт переименован WizardOS → Bare OS (D-029): CLI `bareos`, `BareOS.*`, `%ProgramData%\BareOS\runs`. Ранее описанное ниже и в D-001…D-028 под именем WizardOS — то же.
+- Аудит движка (PR #7): откат по истории baseline с маркером, `AutomaticDelayed`, ACL корня прогонов, Roslyn/CodeQL/Semgrep/схема каталога в CI.
+
+---
+
 ## v0.1-dev — движок: CLI, Windows-доступ, первые твики
 
 **Добавлено:**

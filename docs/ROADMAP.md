@@ -30,11 +30,11 @@ Toolbox ведётся отдельной линией T-v0.1…T-v0.4 ([TOOLBOX
 ## v0.1 — движок
 
 **Состав:**
-1. Решение `src/`: `WizardOS.Core` (библиотека), `WizardOS.Cli` (`wizardos.exe`), `WizardOS.Core.Tests`. .NET 10, D-027.
+1. Решение `src/`: `BareOS.Core` (библиотека), `BareOS.Cli` (`bareos.exe`), `BareOS.Core.Tests`. .NET 10, D-027.
 2. Формат карточки в YAML по [PARAMETERS](PARAMETERS.md) §2 и схема для валидации; каталог `catalog/`.
 3. Команды `plan`, `apply`, `verify`, `revert`, `report` (текст) — [ARCHITECTURE](ARCHITECTURE.md) §4.1.
 4. Обработчики `registry`, `service`, `task`.
-5. Снимок, журнал, блокировка параллельного прогона, хранение в `%ProgramData%\WizardOS\runs\<run_id>\`.
+5. Снимок, журнал, блокировка параллельного прогона, хранение в `%ProgramData%\BareOS\runs\<run_id>\`.
 6. Первые 10–15 карточек класса A (официальные политики) из пресета «ядро» по [TWEAKS-BASELINE](TWEAKS-BASELINE.md).
 7. CI на `windows-latest`: сборка, модульные тесты, валидация каталога.
 
@@ -43,15 +43,15 @@ Toolbox ведётся отдельной линией T-v0.1…T-v0.4 ([TOOLBOX
 - повторный `apply` ничего не меняет (S-02);
 - `revert` возвращает снимок, baseline не перезаписывается (S-03, S-13);
 - сбой preflight даёт код 2 и ни одного изменения (S-11);
-- отчёт и снимок лежат в `%ProgramData%\WizardOS\runs\<run_id>\` с правильными правами (S-15).
+- отчёт и снимок лежат в `%ProgramData%\BareOS\runs\<run_id>\` с правильными правами (S-15).
 
 **Не входит:** AME, Appx, GUI, ISO, необратимые цели.
 
 ## v0.2 — playbook-обёртка и потребительский слой
 
 **Состав:**
-1. `playbook.conf` (Name `WizardOS`, `SupportedBuilds` на семейство `>=26100`), `main.yml` с фазами `00`…`90` ([ARCHITECTURE](ARCHITECTURE.md) §5).
-2. `tools/`: валидатор и упаковщик, первый `WizardOS-<версия>.apbx` + SHA-256.
+1. `playbook.conf` (Name `Bare OS`, `SupportedBuilds` на семейство `>=26100`), `main.yml` с фазами `00`…`90` ([ARCHITECTURE](ARCHITECTURE.md) §5).
+2. `tools/`: валидатор и упаковщик, первый `Bare OS-<версия>.apbx` + SHA-256.
 3. Обработчик `appx`; карточки Appx, задач телеметрии, приватности; пресет «Стандарт» (Copilot, Recall, Edge — D-017).
 4. HTML-отчёт с перечнем необратимого.
 
@@ -126,6 +126,6 @@ v0.0 → v0.1 → v0.2 → v0.3 → v0.4 → v0.5 → v1.0
 
 ## Ближайший шаг
 
-Репозиторий: <https://github.com/OlehHavrilko/WindowsWizard> (public, `main`), локальная копия — `D:\Projects\codex\winoptimizer`. PR и merge Claude выполняет сам ([DECISIONS](DECISIONS.md) D-026). D-002 и D-003 подтверждены, название — WizardOS (D-025).
+Репозиторий: <https://github.com/OlehHavrilko/WindowsWizard> (public, `main`), локальная копия — `D:\Projects\codex\winoptimizer`. PR и merge Claude выполняет сам ([DECISIONS](DECISIONS.md) D-026). D-002 и D-003 подтверждены, название — Bare OS (D-025).
 
 Следующее: v0.1 — каркас движка (`src/`, формат карточки, обработчики `registry` / `service` / `task`, CI).

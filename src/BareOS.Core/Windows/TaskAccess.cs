@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
-namespace WizardOS.Core.Windows;
+namespace BareOS.Core.Windows;
 
 /// <summary>Реализация ITaskAccess через schtasks.exe. Состояние читается из XML задачи
 /// (&lt;Settings&gt;&lt;Enabled&gt;; отсутствие элемента = включена), поэтому не зависит от языка системы.

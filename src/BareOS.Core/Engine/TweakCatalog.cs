@@ -2,7 +2,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace WizardOS.Core.Engine;
+namespace BareOS.Core.Engine;
 
 public sealed class TweakValidationException : Exception
 {

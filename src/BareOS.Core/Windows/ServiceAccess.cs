@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
 
-namespace WizardOS.Core.Windows;
+namespace BareOS.Core.Windows;
 
 /// <summary>Реализация IServiceAccess: чтение типа запуска из HKLM\SYSTEM\CurrentControlSet\Services\&lt;имя&gt;\Start (+DelayedAutostart),
 /// запись через <c>sc.exe config &lt;имя&gt; start= ...</c>. На не-Windows бросает PlatformNotSupportedException.</summary>

@@ -1,8 +1,8 @@
-using WizardOS.Core;
-using WizardOS.Core.Engine;
+using BareOS.Core;
+using BareOS.Core.Engine;
 using Xunit;
 
-namespace WizardOS.Core.Tests;
+namespace BareOS.Core.Tests;
 
 public class CatalogTests : IDisposable
 {
@@ -129,7 +129,7 @@ public class CatalogTests : IDisposable
         while (d != null)
         {
             var c = Path.Combine(d.FullName, "catalog");
-            if (Directory.Exists(c) && File.Exists(Path.Combine(d.FullName, "WizardOS.sln"))) return c;
+            if (Directory.Exists(c) && File.Exists(Path.Combine(d.FullName, "BareOS.sln"))) return c;
             d = d.Parent;
         }
         return null;

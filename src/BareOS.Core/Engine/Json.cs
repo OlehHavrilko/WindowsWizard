@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace WizardOS.Core.Engine;
+namespace BareOS.Core.Engine;
 
 internal static class EngineJson
 {

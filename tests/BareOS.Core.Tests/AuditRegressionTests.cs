@@ -1,10 +1,10 @@
-using WizardOS.Core;
-using WizardOS.Core.Engine;
-using WizardOS.Core.Windows;
+using BareOS.Core;
+using BareOS.Core.Engine;
+using BareOS.Core.Windows;
 using Xunit;
-using static WizardOS.Core.Tests.Rig;
+using static BareOS.Core.Tests.Rig;
 
-namespace WizardOS.Core.Tests;
+namespace BareOS.Core.Tests;
 
 /// <summary>Регрессии аудита перед первым запуском на Windows (2026-11-11).</summary>
 public class AuditRegressionTests
