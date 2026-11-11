@@ -24,6 +24,19 @@ public class RealCatalogTests
     }
 
     [Fact]
+    public void RepoCatalog_UcpdProtectedTargets_AreProposedUntilVerifiedMethod()
+    {
+        var all = TweakCatalog.LoadDirectory(CatalogDir());
+        var hit = all.Where(t => t.Actions.Any(a => a.Registry != null && UcpdGuard.IsProtected(a.Registry.Path, a.Registry.Name))).ToList();
+        Assert.Contains(hit, t => t.Id == "shell.widgets");
+        Assert.All(hit, t =>
+        {
+            Assert.Equal("proposed", t.Status);
+            Assert.Contains("UCPD", t.Evidence);
+        });
+    }
+
+    [Fact]
     public void RepoCatalog_HasTaskCard()
         => Assert.Contains(TweakCatalog.LoadDirectory(CatalogDir()), t => t.Actions.Any(a => a.Task != null));
 
