@@ -1,4 +1,4 @@
-namespace WizardOS.Core.Engine;
+namespace BareOS.Core.Engine;
 
 public sealed class TweakEngine : ITweakEngine
 {

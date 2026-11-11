@@ -1,8 +1,8 @@
-using WizardOS.Core;
-using WizardOS.Core.Engine;
+using BareOS.Core;
+using BareOS.Core.Engine;
 using Xunit;
 
-namespace WizardOS.Core.Tests;
+namespace BareOS.Core.Tests;
 
 public class StoreTests : IDisposable
 {

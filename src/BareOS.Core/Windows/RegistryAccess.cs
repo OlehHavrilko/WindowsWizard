@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
 
-namespace WizardOS.Core.Windows;
+namespace BareOS.Core.Windows;
 
 /// <summary>Реализация IRegistryAccess поверх Microsoft.Win32.Registry (64-битное представление).
 /// Путь: "HKLM\SOFTWARE\..." (также HKCU, HKCR, HKU, HKCC). На не-Windows бросает PlatformNotSupportedException.</summary>

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "WizardOS tweak card",
+  "title": "Bare OS tweak card",
   "description": "Схема карточки твика (подсказки в редакторе). Источник истины — TweakCatalog.Validate; запретные цели (Defender/Hyper-V/WSL) проверяет только движок.",
   "type": "object",
   "required": ["id", "title", "verdict", "stability", "intent", "evidence", "actions"],

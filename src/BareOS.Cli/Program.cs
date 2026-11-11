@@ -1,18 +1,18 @@
 using System.Security.Principal;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using WizardOS.Core;
-using WizardOS.Core.Engine;
-using WizardOS.Core.Windows;
+using BareOS.Core;
+using BareOS.Core.Engine;
+using BareOS.Core.Windows;
 
-namespace WizardOS.Cli;
+namespace BareOS.Cli;
 
 public static class Program
 {
     private const string Usage = """
-        Использование: wizardos <plan|apply|verify|revert|report|validate> [опции]
+        Использование: bareos <plan|apply|verify|revert|report|validate> [опции]
           --catalog <dir>   каталог карточек (по умолчанию ./catalog)
-          --data <dir>      каталог прогонов (по умолчанию %ProgramData%\WizardOS\runs)
+          --data <dir>      каталог прогонов (по умолчанию %ProgramData%\BareOS\runs)
           --only <id,id>    выполнить только перечисленные твики (в т. ч. proposed; без --only берутся accepted/verified)
           --run <id|latest> (report) прогон для отчёта, по умолчанию latest
           --json            вывод в JSON
@@ -57,7 +57,7 @@ public static class Program
             return Fail($"Неизвестная команда: {args[0]}\n{Usage}");
 
         string tweaksDir = "catalog";
-        string dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "WizardOS", "runs");
+        string dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BareOS", "runs");
         HashSet<string>? only = null;
         bool json = false;
         string runArg = "latest";

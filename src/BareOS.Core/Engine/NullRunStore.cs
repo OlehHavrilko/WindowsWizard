@@ -1,4 +1,4 @@
-namespace WizardOS.Core.Engine;
+namespace BareOS.Core.Engine;
 
 /// <summary>Хранилище только для чтения: читает baseline из настоящего, ничего не пишет. Для plan/verify без прав администратора.</summary>
 public sealed class NullRunStore : IRunStore

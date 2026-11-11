@@ -1,8 +1,8 @@
-using WizardOS.Core;
+using BareOS.Core;
 using Xunit;
-using static WizardOS.Core.Tests.Rig;
+using static BareOS.Core.Tests.Rig;
 
-namespace WizardOS.Core.Tests;
+namespace BareOS.Core.Tests;
 
 public class EngineTests
 {

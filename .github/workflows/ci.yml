@@ -16,12 +16,12 @@ jobs:
       - run: dotnet build -c Release
       - run: dotnet test -c Release --no-build
       - name: Валидация каталога
-        run: dotnet run -c Release --no-build --project src/WizardOS.Cli -- validate --catalog catalog
+        run: dotnet run -c Release --no-build --project src/BareOS.Cli -- validate --catalog catalog
       - name: Publish (self-contained single-file, D-027)
-        run: dotnet publish src/WizardOS.Cli -c Release -r win-x64 -o publish
+        run: dotnet publish src/BareOS.Cli -c Release -r win-x64 -o publish
       - name: Smoke-тест exe
-        run: ./publish/wizardos.exe validate --catalog catalog
+        run: ./publish/bareos.exe validate --catalog catalog
       - uses: actions/upload-artifact@v4
         with:
-          name: wizardos-win-x64
-          path: publish/wizardos.exe
+          name: bareos-win-x64
+          path: publish/bareos.exe

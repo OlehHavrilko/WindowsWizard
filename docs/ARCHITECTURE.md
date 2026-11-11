@@ -1,6 +1,6 @@
-# Архитектура WizardOS: движок, playbook, Toolbox
+# Архитектура Bare OS: движок, playbook, Toolbox
 
-Документ описывает механику платформы AME и то, как под неё устроен WizardOS. Схема работ — [DECISIONS](DECISIONS.md) D-023: общий движок, над ним две обёртки. Всё, что помечено «требует проверки», проверяется на ВМ (см. [TEST-MATRIX](TEST-MATRIX.md)).
+Документ описывает механику платформы AME и то, как под неё устроен Bare OS. Схема работ — [DECISIONS](DECISIONS.md) D-023: общий движок, над ним две обёртки. Всё, что помечено «требует проверки», проверяется на ВМ (см. [TEST-MATRIX](TEST-MATRIX.md)).
 
 ## 1. Что такое `.apbx`
 
@@ -58,10 +58,10 @@ Playbook/
             каталог карточек твиков (catalog/*.yml)
                           │  встраивается при сборке
                           ▼
-   ┌──────────────── движок WizardOS (.NET) ────────────────┐
-   │ WizardOS.Core: карточки, план, обработчики, снимок,    │
+   ┌──────────────── движок Bare OS (.NET) ────────────────┐
+   │ BareOS.Core: карточки, план, обработчики, снимок,    │
    │                журнал, проверка, откат, отчёт          │
-   │ wizardos.exe:  plan | apply | verify | revert | report │
+   │ bareos.exe:  plan | apply | verify | revert | report │
    └──────────────▲─────────────────────────▲───────────────┘
                   │ вызов CLI               │ ссылка на Core
         AME Playbook (.apbx)          Toolbox (WinUI 3)
@@ -107,11 +107,11 @@ Playbook/
 
 ### 4.3 Хранение
 
-Прогоны — `%ProgramData%\WizardOS\runs\<run_id>\`: план, снимок (`baseline`), журнал, отчёт. Права — только администраторы и SYSTEM; запись атомарная; baseline не перезаписывается ([EXECUTION-CONTRACT](EXECUTION-CONTRACT.md) §2).
+Прогоны — `%ProgramData%\BareOS\runs\<run_id>\`: план, снимок (`baseline`), журнал, отчёт. Права — только администраторы и SYSTEM; запись атомарная; baseline не перезаписывается ([EXECUTION-CONTRACT](EXECUTION-CONTRACT.md) §2).
 
 ### 4.4 Платформа
 
-Движок — .NET 10 (LTS), `win-x64`, публикация self-contained в один файл с обрезкой (trimming): на чистой Windows нет современного .NET, а ставить runtime ради одного запуска — лишняя зависимость. Toolbox ссылается на ту же библиотеку `WizardOS.Core`. Решение — [DECISIONS](DECISIONS.md) D-027.
+Движок — .NET 10 (LTS), `win-x64`, публикация self-contained в один файл с обрезкой (trimming): на чистой Windows нет современного .NET, а ставить runtime ради одного запуска — лишняя зависимость. Toolbox ссылается на ту же библиотеку `BareOS.Core`. Решение — [DECISIONS](DECISIONS.md) D-027.
 
 ## 5. Порядок фаз playbook
 
@@ -119,11 +119,11 @@ Playbook/
 
 | Фаза | Файл | Содержимое | Этап |
 |---|---|---|---|
-| 0 | `00-engine.yml` | копирование `wizardos.exe` в `%ProgramData%\WizardOS\bin\`, проверка подписи и SHA-256 | live / OOBE |
-| 1 | `10-plan.yml` | `wizardos plan --preset <пресет> --options <из FeaturePages>`; отказ — остановка | live / OOBE |
-| 2 | `20-apply.yml` | `wizardos apply --plan <план>` | live / OOBE |
+| 0 | `00-engine.yml` | копирование `bareos.exe` в `%ProgramData%\BareOS\bin\`, проверка подписи и SHA-256 | live / OOBE |
+| 1 | `10-plan.yml` | `bareos plan --preset <пресет> --options <из FeaturePages>`; отказ — остановка | live / OOBE |
+| 2 | `20-apply.yml` | `bareos apply --plan <план>` | live / OOBE |
 | 3 | `30-ame.yml` | декларативные действия AME, которые движок не выполняет (если есть) | по карточке |
-| 4 | `90-report.yml` | `wizardos verify` + `wizardos report` | live / OOBE |
+| 4 | `90-report.yml` | `bareos verify` + `bareos report` | live / OOBE |
 
 Injection для твиков не используется (D-023): на OOBE движок снимает исходное состояние живой системы. Injection остаётся только для того, что AME делает сам: `<ISO><DisableBitLocker>` (D-003), кэш загрузок, подмена OOBE.
 
@@ -131,11 +131,11 @@ Injection для твиков не используется (D-023): на OOBE �
 
 ## 6. Адаптация к обновлениям
 
-После обновления Windows Toolbox (или задача по расписанию, если пользователь согласился) вызывает `wizardos verify`. Цели со статусом `drift` возвращаются в ожидаемое состояние только для класса устойчивости A; `missing-target` помечает твик несовместимым с новой сборкой и отключает его. Подробно — [DIFFERENTIATORS](DIFFERENTIATORS.md) §5.
+После обновления Windows Toolbox (или задача по расписанию, если пользователь согласился) вызывает `bareos verify`. Цели со статусом `drift` возвращаются в ожидаемое состояние только для класса устойчивости A; `missing-target` помечает твик несовместимым с новой сборкой и отключает его. Подробно — [DIFFERENTIATORS](DIFFERENTIATORS.md) §5.
 
 ## 7. Границы ответственности
 
-| WizardOS делает | WizardOS не делает |
+| Bare OS делает | Bare OS не делает |
 |---|---|
 | меняет реестр, тип запуска некритичных служб, задачи, состав потребительских Appx | не модифицирует установочный образ как продукт (это делает AME Wizard) |
 | снимает исходное состояние, проверяет результат, формирует отчёт | не заменяет резервное копирование и точку восстановления |
@@ -156,10 +156,10 @@ Injection для твиков не используется (D-023): на OOBE �
         │
         └── AME OOBE: первая загрузка
                 ├── FeaturePages → пресет и опции
-                ├── wizardos plan → apply → verify
-                └── %ProgramData%\WizardOS\runs\<run_id>\ → отчёт
+                ├── bareos plan → apply → verify
+                └── %ProgramData%\BareOS\runs\<run_id>\ → отчёт
 
-живая система:  AME Wizard (тот же playbook)  или  Toolbox → wizardos
+живая система:  AME Wizard (тот же playbook)  или  Toolbox → bareos
 ```
 
 Проверка обязательна: на свежей системе часть действий может молча не сработать (пример: политика отключения Defender при включённой Tamper Protection), поэтому постусловия проверяются отдельно от отсутствия ошибок.

@@ -1,4 +1,4 @@
-namespace WizardOS.Core;
+namespace BareOS.Core;
 
 // ===== Контракты движка. Реализации и тесты пишутся против них. =====
 
@@ -101,7 +101,7 @@ public sealed record Report(string FormatVersion, string RunId, string Command, 
                                             or ActionStatus.Reverted or ActionStatus.NothingToRevert or ActionStatus.Skipped);
 }
 
-/// <summary>Хранилище прогонов: %ProgramData%\WizardOS\runs\&lt;runId&gt;\ (путь передаётся снаружи).
+/// <summary>Хранилище прогонов: %ProgramData%\BareOS\runs\&lt;runId&gt;\ (путь передаётся снаружи).
 /// Baseline пишется атомарно (temp + replace) и НЕ перезаписывается.</summary>
 public interface IRunStore
 {

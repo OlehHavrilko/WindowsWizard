@@ -4,8 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>wizardos</AssemblyName>
-    <RootNamespace>WizardOS.Cli</RootNamespace>
+    <AssemblyName>bareos</AssemblyName>
+    <RootNamespace>BareOS.Cli</RootNamespace>
   </PropertyGroup>
   <!-- D-027: self-contained single-file win-x64 — только при publish (-p:PublishProfile / -r win-x64), обычный build не затронут -->
   <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' Or '$(RuntimeIdentifier)' == 'win-x64'">
@@ -14,6 +14,6 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WizardOS.Core\WizardOS.Core.csproj" />
+    <ProjectReference Include="..\BareOS.Core\BareOS.Core.csproj" />
   </ItemGroup>
 </Project>
