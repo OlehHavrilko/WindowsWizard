@@ -1,0 +1,30 @@
+id: privacy.activity-history
+title: "История действий не собирается и не отправляется"
+verdict: Core
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Отключить ленту действий, публикацию и выгрузку истории действий (Timeline) политикой."
+evidence: "Политики HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System: EnableActivityFeed = 0, PublishUserActivities = 0, UploadUserActivities = 0; в параметрах «Конфиденциальность → История действий» опции недоступны (управляются организацией)."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+actions:
+  - id: enable-activity-feed
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\System'
+      name: EnableActivityFeed
+      kind: DWord
+      data: "0"
+  - id: publish-user-activities
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\System'
+      name: PublishUserActivities
+      kind: DWord
+      data: "0"
+  - id: upload-user-activities
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\System'
+      name: UploadUserActivities
+      kind: DWord
+      data: "0"

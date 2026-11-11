@@ -1,0 +1,18 @@
+id: privacy.error-reporting
+title: "Отправка отчётов об ошибках в Microsoft выключена"
+verdict: Core
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Отключить Windows Error Reporting политикой, чтобы дампы и отчёты о сбоях не уходили в Microsoft."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting: Disabled = 1; после искусственного сбоя приложения запись в очереди %ProgramData%\\Microsoft\\Windows\\WER\\ReportQueue не создаётся."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+actions:
+  - id: disable-wer
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting'
+      name: Disabled
+      kind: DWord
+      data: "1"

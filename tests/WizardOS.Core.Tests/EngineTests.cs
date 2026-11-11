@@ -259,3 +259,80 @@ public class EngineTests
         Assert.Equal(StartType.Manual, b.Entries.Single(e => e.ActionId == "s").Service!.Start);
     }
 }
+
+public class TaskEngineTests
+{
+    const string P = @"\Microsoft\Windows\Test\Task";
+
+    [Fact]
+    public void Apply_DisablesEnabledTask_AndRevertRestores()
+    {
+        var r = new Rig();
+        r.Tasks.States[P] = new TaskState(true, true);
+        var t = Rig.T("t.task", Rig.Task_("a", P, false));
+        var rep = r.Engine.Apply(new[] { t });
+        Assert.Equal(ActionStatus.Applied, rep.Entries.Single().Status);
+        Assert.False(r.Tasks.Read(P).Enabled);
+        Assert.Equal(ActionStatus.Verified, r.Engine.Verify(new[] { t }).Entries.Single().Status);
+
+        var rev = r.Engine.Revert(new[] { t });
+        Assert.Equal(ActionStatus.Reverted, rev.Entries.Single().Status);
+        Assert.True(r.Tasks.Read(P).Enabled);
+    }
+
+    [Fact]
+    public void Apply_MissingTask_WhenDisabledExpected_IsAlreadyApplied_NoWrites()
+    {
+        var r = new Rig();
+        var rep = r.Engine.Apply(new[] { Rig.T("t.task", Rig.Task_("a", P, false)) });
+        Assert.Equal(ActionStatus.AlreadyApplied, rep.Entries.Single().Status);
+        Assert.Empty(r.Tasks.Writes);
+    }
+
+    [Fact]
+    public void Verify_AfterApply_DoesNotWrite()
+    {
+        var r = new Rig();
+        r.Tasks.States[P] = new TaskState(true, true);
+        var t = Rig.T("t.task", Rig.Task_("a", P, false));
+        r.Engine.Apply(new[] { t });
+        var n = r.Tasks.Writes.Count;
+        // второй прогон в новом движке на том же хранилище невозможен (baseline не перезаписывается) — проверяем идемпотентность на уровне MatchesExpected
+        Assert.Equal(ActionStatus.Verified, r.Engine.Verify(new[] { t }).Entries.Single().Status);
+        Assert.Equal(n, r.Tasks.Writes.Count);
+    }
+
+    [Fact]
+    public void Revert_Conflict_WhenTaskChangedByUser()
+    {
+        var r = new Rig();
+        r.Tasks.States[P] = new TaskState(true, false); // baseline: Disabled
+        var t = Rig.T("t.task", Rig.Task_("a", P, true)); // ожидаем Enabled
+        r.Engine.Apply(new[] { t });
+        Assert.True(r.Tasks.Read(P).Enabled);
+        r.Tasks.States.Remove(P); // задача пропала: ни baseline, ни ожидаемое
+        var rev = r.Engine.Revert(new[] { t });
+        Assert.Equal(ActionStatus.Conflict, rev.Entries.Single().Status);
+    }
+
+    [Fact]
+    public void Apply_WriteFailure_ReportsFailed()
+    {
+        var r = new Rig();
+        r.Tasks.States[P] = new TaskState(true, true);
+        r.Tasks.FailWhen = (_, _) => true;
+        var rep = r.Engine.Apply(new[] { Rig.T("t.task", Rig.Task_("a", P, false)) });
+        Assert.Equal(ActionStatus.Failed, rep.Entries.Single().Status);
+        Assert.False(rep.Ok);
+    }
+
+    [Fact]
+    public void Plan_ShowsTaskTarget()
+    {
+        var r = new Rig();
+        r.Tasks.States[P] = new TaskState(true, true);
+        var e = r.Engine.Plan(new[] { Rig.T("t.task", Rig.Task_("a", P, false)) }).Entries.Single();
+        Assert.Equal("task:" + P, e.Target);
+        Assert.Equal("Enabled", e.Before);
+    }
+}

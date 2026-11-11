@@ -42,6 +42,8 @@ actions:
     registry: { path: 'HKLM\…', name: "…", kind: DWord, data: "0" }
   - id: a2
     service: { name: DiagTrack, start: Disabled }
+  - id: a3
+    task: { path: '\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip', state: disabled }   # enabled | disabled
 # необязательные поля:
 category: privacy        # реестр / службы / appx / задачи / приватность / удобство / латентность
 scope: machine           # machine | user
@@ -56,7 +58,7 @@ source: "…"
 status: proposed         # proposed | accepted | verified | rejected
 ```
 
-В действии ровно одно из `registry` / `service`. Пути реестра в одинарных кавычках (обратные слэши без экранирования). Данные реестра в каноническом виде: DWord/QWord — десятичное число, Binary — hex, MultiString — строки через `\n`.
+В действии ровно одно из `registry` / `service` / `task`. Для `task: disabled` отсутствие задачи в системе считается выполненным (в этой сборке её нет); состояние читается из XML задачи через `schtasks.exe`, не зависит от языка системы. Пути реестра в одинарных кавычках (обратные слэши без экранирования). Данные реестра в каноническом виде: DWord/QWord — десятичное число, Binary — hex, MultiString — строки через `\n`.
 
 Запретный список (Defender / Hyper-V / WSL): отклоняются службы из списка, реестровые пути `...\Services\<запрещённая служба>`, пути с `Windows Defender`, `Windows Advanced Threat Protection`, `Hyper-V`, `\Microsoft\Virtualization`, `\Lxss`, `\WSL`.
 
@@ -70,3 +72,8 @@ status: proposed         # proposed | accepted | verified | rejected
 2. Действия — только то, что умеют `registry` и `service`; для каждого заранее ясно значение «после».
 3. Проверить: `wizardos plan --only <id>`, затем `apply`, `verify`, `revert` на тестовой машине Windows.
 4. Отметить в `docs/CHANGELOG.md`.
+
+
+## Валидация каталога
+
+`wizardos validate --catalog catalog` загружает все карточки и проверяет их тем же кодом, что `plan/apply` (обязательные поля, `evidence`, уникальность id, запретный список Defender/Hyper-V/WSL, формат действий). Код выхода 2 при ошибке. Запускается в CI. Для редакторов (подсказки и подсветка в VS Code) лежит JSON-схема `catalog/tweak.schema.json`; источником истины остаётся код движка.

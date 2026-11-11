@@ -1,0 +1,18 @@
+id: privacy.clipboard-cloud-sync
+title: "Облачная синхронизация буфера обмена выключена"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Запретить отправку содержимого буфера обмена в облако и на другие устройства; локальная история буфера остаётся."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System: AllowCrossDeviceClipboard = 0; в параметрах буфера обмена пункт «Синхронизация между устройствами» недоступен."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+actions:
+  - id: allow-cross-device-clipboard
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\System'
+      name: AllowCrossDeviceClipboard
+      kind: DWord
+      data: "0"
