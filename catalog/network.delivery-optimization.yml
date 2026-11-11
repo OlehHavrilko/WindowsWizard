@@ -1,0 +1,18 @@
+id: network.delivery-optimization
+title: "Delivery Optimization: только загрузка с серверов Microsoft"
+verdict: Standard
+stability: Stable
+category: registry
+scope: machine
+risk: T1
+status: accepted
+intent: "Запретить раздачу и получение обновлений от других компьютеров (peer-to-peer); сами обновления продолжают приходить."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization: DODownloadMode = 0; Get-DeliveryOptimizationStatus не показывает трафика от пиров, исходящий трафик службы DoSvc при простое = 0 (замер Bench Harness)."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+actions:
+  - id: download-mode-http-only
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization'
+      name: DODownloadMode
+      kind: DWord
+      data: "0"

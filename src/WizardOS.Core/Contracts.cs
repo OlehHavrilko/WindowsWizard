@@ -28,22 +28,33 @@ public interface IServiceAccess
     void SetStartType(string name, StartType start);
 }
 
-/// <summary>Среда выполнения: всё, что трогает систему.</summary>
-public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now);
+/// <summary>Состояние задачи планировщика. Enabled значим только при Exists.</summary>
+public sealed record TaskState(bool Exists, bool Enabled = false);
+public interface ITaskAccess
+{
+    TaskState Read(string path);                  // path: "\Microsoft\Windows\...\Имя"
+    void SetEnabled(string path, bool enabled);
+}
+
+/// <summary>Среда выполнения: всё, что трогает систему. Tasks необязателен (null => действия task недоступны).</summary>
+public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null);
 
 // ===== Декларативное описание твика =====
 
 public enum Stability { Stable, Moderate, Fragile }      // класс устойчивости к обновлениям (D-024)
 public enum Verdict { Core, Standard, Option, Lab }
 
-/// <summary>Одно действие твика. Ровно одно из: Registry или Service.</summary>
+/// <summary>Одно действие твика. Ровно одно из: Registry, Service или Task.</summary>
 public sealed record TweakAction(
     string Id,
     RegistryTarget? Registry = null,
-    ServiceTarget? Service = null);
+    ServiceTarget? Service = null,
+    TaskTarget? Task = null);
 
 public sealed record RegistryTarget(string Path, string Name, RegKind Kind, string Data);
 public sealed record ServiceTarget(string Name, StartType Start);
+/// <summary>Задача планировщика: ожидаемое состояние Enabled. Для Enabled=false отсутствие задачи считается выполненным.</summary>
+public sealed record TaskTarget(string Path, bool Enabled);
 
 /// <summary>Карточка твика (читается из YAML каталога catalog/, ключи camelCase; PARAMETERS §2).
 /// Поля после Actions необязательны.</summary>
@@ -74,8 +85,8 @@ public enum ActionStatus { Planned, Started, Applied, AlreadyApplied, Failed, Sk
 public sealed record PlanEntry(string TweakId, string ActionId, string Target, string Before, string Expected);
 public sealed record Plan(string FormatVersion, string RunId, DateTimeOffset CreatedAt, IReadOnlyList<PlanEntry> Entries);
 
-/// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service заполнено.</summary>
-public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service);
+/// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service/Task заполнено.</summary>
+public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null);
 public sealed record Baseline(string FormatVersion, string BaselineId, DateTimeOffset CreatedAt, IReadOnlyList<BaselineEntry> Entries);
 
 /// <summary>Запись журнала/отчёта: статус + доказательство (значение до/после/ожидаемое).</summary>

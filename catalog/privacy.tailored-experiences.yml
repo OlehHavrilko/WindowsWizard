@@ -1,0 +1,18 @@
+id: privacy.tailored-experiences
+title: "Персонализированные советы на основе диагностики выключены"
+verdict: Core
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Запретить использовать диагностические данные для персонализированных рекомендаций и рекламы."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent: DisableTailoredExperiencesWithDiagnosticData = 1; параметр «Персонализированные возможности» недоступен для изменения."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+actions:
+  - id: disable-tailored-experiences
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableTailoredExperiencesWithDiagnosticData
+      kind: DWord
+      data: "1"

@@ -70,6 +70,12 @@ public static class TweakCatalog
         public string? Id { get; set; }
         public RegistryDto? Registry { get; set; }
         public ServiceDto? Service { get; set; }
+        public TaskDto? Task { get; set; }
+    }
+    private sealed class TaskDto
+    {
+        public string? Path { get; set; }
+        public string? State { get; set; }   // enabled | disabled
     }
     private sealed class RegistryDto
     {
@@ -131,7 +137,15 @@ public static class TweakCatalog
             ServiceTarget? svc = a.Service is { } s
                 ? new ServiceTarget(s.Name ?? "", ParseEnum<StartType>(s.Start, "service.start", path))
                 : null;
-            return new TweakAction(a.Id ?? "", reg, svc);
+            TaskTarget? task = null;
+            if (a.Task is { } tk)
+            {
+                var st = (tk.State ?? "").Trim().ToLowerInvariant();
+                if (st != "enabled" && st != "disabled")
+                    throw new TweakValidationException($"{path}: task.state должен быть enabled или disabled, получено '{tk.State}'");
+                task = new TaskTarget(tk.Path ?? "", st == "enabled");
+            }
+            return new TweakAction(a.Id ?? "", reg, svc, task);
         }).ToList();
         return new Tweak(d.Id ?? "", d.Title ?? "",
             ParseEnum<Verdict>(d.Verdict, "verdict", path), ParseEnum<Stability>(d.Stability, "stability", path),
@@ -159,8 +173,16 @@ public static class TweakCatalog
         {
             if (a == null || string.IsNullOrWhiteSpace(a.Id)) throw new TweakValidationException(P("действие без Id"));
             if (!ids.Add(a.Id)) throw new TweakValidationException(P($"повторяющийся Id действия '{a.Id}'"));
-            if ((a.Registry == null) == (a.Service == null))
-                throw new TweakValidationException(P($"действие '{a.Id}': должно быть ровно одно из Registry/Service"));
+            if ((a.Registry != null ? 1 : 0) + (a.Service != null ? 1 : 0) + (a.Task != null ? 1 : 0) != 1)
+                throw new TweakValidationException(P($"действие '{a.Id}': должно быть ровно одно из Registry/Service/Task"));
+            if (a.Task is { } tt)
+            {
+                if (!tt.Path.StartsWith("\\", StringComparison.Ordinal) || tt.Path.Length < 3 || tt.Path.EndsWith("\\", StringComparison.Ordinal))
+                    throw new TweakValidationException(P($"действие '{a.Id}': путь задачи должен начинаться с \\ и указывать на задачу: '{tt.Path}'"));
+                foreach (var part in ForbiddenPathParts.Concat(new[] { "\\Microsoft\\Windows\\Windows Defender\\" }))
+                    if (tt.Path.Contains(part, StringComparison.OrdinalIgnoreCase))
+                        throw new TweakValidationException(P($"действие '{a.Id}': запрещённая цель (Defender/Hyper-V/WSL): '{tt.Path}'"));
+            }
             if (a.Registry is { } r)
             {
                 if (string.IsNullOrWhiteSpace(r.Path)) throw new TweakValidationException(P($"действие '{a.Id}': пустой путь"));

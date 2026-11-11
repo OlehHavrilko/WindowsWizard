@@ -10,12 +10,13 @@ namespace WizardOS.Cli;
 public static class Program
 {
     private const string Usage = """
-        Использование: wizardos <plan|apply|verify|revert|report> [опции]
+        Использование: wizardos <plan|apply|verify|revert|report|validate> [опции]
           --catalog <dir>   каталог карточек (по умолчанию ./catalog)
           --data <dir>      каталог прогонов (по умолчанию %ProgramData%\WizardOS\runs)
           --only <id,id>    выполнить только перечисленные твики
           --run <id|latest> (report) прогон для отчёта, по умолчанию latest
           --json            вывод в JSON
+        validate — проверить каталог карточек и выйти (CI).
         Код выхода: 0 — всё в порядке, 1 — есть проблемы, 2 — ошибка использования/валидации.
         """;
 
@@ -51,7 +52,7 @@ public static class Program
         }
 
         var command = args[0].ToLowerInvariant();
-        if (command is not ("plan" or "apply" or "verify" or "revert"))
+        if (command is not ("plan" or "apply" or "verify" or "revert" or "validate"))
             return Fail($"Неизвестная команда: {args[0]}\n{Usage}");
 
         string tweaksDir = "catalog";
@@ -88,6 +89,11 @@ public static class Program
 
         if (!Directory.Exists(tweaksDir)) return Fail($"Каталог твиков не найден: {tweaksDir}");
         IReadOnlyList<Tweak> tweaks = TweakCatalog.LoadDirectory(tweaksDir);
+        if (command == "validate")
+        {
+            Console.WriteLine($"OK: карточек {tweaks.Count}, действий {tweaks.Sum(t => t.Actions.Count)}");
+            return 0;
+        }
         if (only is not null)
         {
             var unknown = only.Where(id => tweaks.All(t => t.Id != id)).ToList();
@@ -110,7 +116,7 @@ public static class Program
 
     private static int Execute(string command, IReadOnlyList<Tweak> tweaks, string dataDir, bool json)
     {
-        var env = new EngineEnv(new RegistryAccess(), new ServiceAccess(), () => DateTimeOffset.Now);
+        var env = new EngineEnv(new RegistryAccess(), new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess());
         var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
         var store = new JsonRunStore(dataDir);
         ITweakEngine engine = new TweakEngine(env, store, runId);

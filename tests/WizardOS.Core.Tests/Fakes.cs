@@ -44,6 +44,22 @@ public sealed class FakeServices : IServiceAccess
     }
 }
 
+public sealed class FakeTasks : ITaskAccess
+{
+    public Dictionary<string, TaskState> States = new(StringComparer.OrdinalIgnoreCase);
+    public List<string> Writes = new();
+    public Func<string, bool, bool>? FailWhen;
+
+    public TaskState Read(string path) => States.TryGetValue(path, out var s) ? s : new TaskState(false);
+
+    public void SetEnabled(string path, bool enabled)
+    {
+        if (FailWhen?.Invoke(path, enabled) == true) throw new IOException("injected task failure " + path);
+        Writes.Add($"{path}|{enabled}");
+        States[path] = new TaskState(true, enabled);
+    }
+}
+
 public sealed class MemStore : IRunStore
 {
     public List<Baseline> Baselines = new();
@@ -63,13 +79,14 @@ public sealed class Rig
 {
     public FakeRegistry Reg = new();
     public FakeServices Svc = new();
+    public FakeTasks Tasks = new();
     public MemStore Store = new();
     public ITweakEngine Engine;
     public const string K = @"HKLM\SOFTWARE\Test";
 
     public Rig(IRunStore? store = null)
     {
-        var env = new EngineEnv(Reg, Svc, () => new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var env = new EngineEnv(Reg, Svc, () => new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Tasks);
         Engine = new TweakEngine(env, store ?? Store, "run1");
     }
 
@@ -79,5 +96,7 @@ public sealed class Rig
         new(id, Registry: new RegistryTarget(path, name, RegKind.DWord, v.ToString()));
     public static TweakAction Svc_(string id, string name, StartType s) =>
         new(id, Service: new ServiceTarget(name, s));
+    public static TweakAction Task_(string id, string path, bool enabled) =>
+        new(id, Task: new TaskTarget(path, enabled));
     public static RegValue D(int v) => new(true, RegKind.DWord, v.ToString());
 }

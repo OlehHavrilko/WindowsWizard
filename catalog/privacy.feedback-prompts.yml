@@ -1,0 +1,18 @@
+id: privacy.feedback-prompts
+title: "Запросы отзывов Windows выключены"
+verdict: Core
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Отключить уведомления с просьбой оставить отзыв о Windows."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection: DoNotShowFeedbackNotifications = 1; процесс SIHClient не показывает запросов отзывов."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+actions:
+  - id: no-feedback-notifications
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+      name: DoNotShowFeedbackNotifications
+      kind: DWord
+      data: "1"

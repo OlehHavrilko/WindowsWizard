@@ -8,7 +8,9 @@
 
 **Добавлено:**
 
-- `src/WizardOS.Core/Windows/` — `RegistryAccess`, `ServiceAccess`.
+- `src/WizardOS.Core/Windows/` — `RegistryAccess`, `ServiceAccess`, `TaskAccess` (планировщик через `schtasks.exe`).
+- Действие `task` (enabled/disabled) в движке, каталоге и откате; команда `wizardos validate`; `catalog/tweak.schema.json`.
+- Каталог: 13 карточек (приватность, поиск, Delivery Optimization, задачи телеметрии); CI публикует self-contained `wizardos.exe` (win-x64) как артефакт.
 - `src/WizardOS.Cli/` — приложение `wizardos` (`plan|apply|verify|revert`).
 - `catalog/` (YAML, YamlDotNet) — `privacy.telemetry`, `shell.widgets`, `consumer.ads`; JSON-загрузка карточек удалена; запретный список закрывает `Services\<служба>`, Windows Advanced Threat Protection, Microsoft\Virtualization.
 - `docs/ENGINE.md` — описание движка.

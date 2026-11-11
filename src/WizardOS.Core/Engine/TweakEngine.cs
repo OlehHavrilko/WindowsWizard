@@ -32,22 +32,41 @@ public sealed class TweakEngine : ITweakEngine
     private static bool Same(ServiceState a, ServiceState b)
         => a.Exists == b.Exists && (!a.Exists || a.Start == b.Start);
 
+    private static string Fmt(TaskState t) => t.Exists ? (t.Enabled ? "Enabled" : "Disabled") : "<missing>";
+    private static bool Same(TaskState a, TaskState b)
+        => a.Exists == b.Exists && (!a.Exists || a.Enabled == b.Enabled);
+    /// <summary>Ожидание для Enabled=false выполнено и при отсутствии задачи (в этой сборке её нет — ничего не запускается).</summary>
+    private static bool Satisfies(TaskState cur, TaskTarget t)
+        => t.Enabled ? cur.Exists && cur.Enabled : !cur.Exists || !cur.Enabled;
+
+    private ITaskAccess Tasks => _env.Tasks ?? throw new InvalidOperationException("Обработчик task не настроен (ITaskAccess)");
+
     private static string TargetOf(TweakAction a) => a.Registry != null
         ? $"{a.Registry.Path}\\{a.Registry.Name}"
-        : $"service:{a.Service!.Name}";
+        : a.Service != null ? $"service:{a.Service.Name}" : $"task:{a.Task!.Path}";
 
     private static RegValue ExpectedReg(RegistryTarget r) => new(true, r.Kind, r.Data);
     private static ServiceState ExpectedSvc(ServiceTarget s) => new(true, s.Start);
 
-    private string CurrentStr(TweakAction a) => a.Registry != null
-        ? Fmt(_env.Registry.Read(a.Registry.Path, a.Registry.Name))
-        : Fmt(_env.Services.Read(a.Service!.Name));
+    private string CurrentStr(TweakAction a) =>
+        a.Registry != null ? Fmt(_env.Registry.Read(a.Registry.Path, a.Registry.Name))
+        : a.Service != null ? Fmt(_env.Services.Read(a.Service.Name))
+        : Fmt(Tasks.Read(a.Task!.Path));
 
-    private static string ExpectedStr(TweakAction a) => a.Registry != null ? Fmt(ExpectedReg(a.Registry)) : Fmt(ExpectedSvc(a.Service!));
+    private static string ExpectedStr(TweakAction a) =>
+        a.Registry != null ? Fmt(ExpectedReg(a.Registry))
+        : a.Service != null ? Fmt(ExpectedSvc(a.Service))
+        : (a.Task!.Enabled ? "Enabled" : "Disabled (или <missing>)");
 
-    private bool MatchesExpected(TweakAction a) => a.Registry != null
-        ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), ExpectedReg(a.Registry))
-        : Same(_env.Services.Read(a.Service!.Name), ExpectedSvc(a.Service!));
+    private bool MatchesExpected(TweakAction a) =>
+        a.Registry != null ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), ExpectedReg(a.Registry))
+        : a.Service != null ? Same(_env.Services.Read(a.Service.Name), ExpectedSvc(a.Service))
+        : Satisfies(Tasks.Read(a.Task!.Path), a.Task);
+
+    private BaselineEntry Capture(string tweakId, TweakAction a) =>
+        a.Registry != null ? new BaselineEntry(tweakId, a.Id, _env.Registry.Read(a.Registry.Path, a.Registry.Name), null)
+        : a.Service != null ? new BaselineEntry(tweakId, a.Id, null, _env.Services.Read(a.Service.Name))
+        : new BaselineEntry(tweakId, a.Id, null, null, Tasks.Read(a.Task!.Path));
 
     private Report MakeReport(string cmd, List<ReportEntry> entries) => new(FormatVersion, _runId, cmd, _env.Now(), entries);
 
@@ -79,9 +98,7 @@ public sealed class TweakEngine : ITweakEngine
             _store.LoadLatestBaseline(); // хранилище читается
             var be = new List<BaselineEntry>();
             foreach (var (t, a) in actions)
-                be.Add(a.Registry != null
-                    ? new BaselineEntry(t.Id, a.Id, _env.Registry.Read(a.Registry.Path, a.Registry.Name), null)
-                    : new BaselineEntry(t.Id, a.Id, null, _env.Services.Read(a.Service!.Name)));
+                be.Add(Capture(t.Id, a));
             _store.SaveBaseline(new Baseline(FormatVersion, _runId, _env.Now(), be)); // хранилище пишется
         }
         catch (Exception ex)
@@ -133,7 +150,8 @@ public sealed class TweakEngine : ITweakEngine
     private void Write(TweakAction a)
     {
         if (a.Registry != null) _env.Registry.Write(a.Registry.Path, a.Registry.Name, ExpectedReg(a.Registry));
-        else _env.Services.SetStartType(a.Service!.Name, a.Service.Start);
+        else if (a.Service != null) _env.Services.SetStartType(a.Service.Name, a.Service.Start);
+        else Tasks.SetEnabled(a.Task!.Path, a.Task.Enabled);
     }
 
     private void TryJournal(ReportEntry e) { try { Journal(e); } catch { } }
@@ -189,16 +207,18 @@ public sealed class TweakEngine : ITweakEngine
             try
             {
                 var be = baseline.Entries.FirstOrDefault(e => e.TweakId == t.Id && e.ActionId == a.Id);
-                if (be == null || (a.Registry != null ? be.Registry == null : be.Service == null))
+                if (be == null || (a.Registry != null ? be.Registry == null : a.Service != null ? be.Service == null : be.Task == null))
                 {
                     entries.Add(new ReportEntry(t.Id, a.Id, ActionStatus.Failed, "", "", expected, "В baseline нет записи для цели (неполный снимок), без записи"));
                     continue;
                 }
-                string baseStr = a.Registry != null ? Fmt(be.Registry!) : Fmt(be.Service!);
+                string baseStr = a.Registry != null ? Fmt(be.Registry!) : a.Service != null ? Fmt(be.Service!) : Fmt(be.Task!);
                 cur = CurrentStr(a);
-                bool isBase = a.Registry != null
+                bool IsBaseNow() => a.Registry != null
                     ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), be.Registry!)
-                    : Same(_env.Services.Read(a.Service!.Name), be.Service!);
+                    : a.Service != null ? Same(_env.Services.Read(a.Service.Name), be.Service!)
+                    : Same(Tasks.Read(a.Task!.Path), be.Task!);
+                bool isBase = IsBaseNow();
                 ReportEntry res;
                 if (isBase)
                     res = new ReportEntry(t.Id, a.Id, ActionStatus.NothingToRevert, cur, cur, baseStr);
@@ -208,14 +228,17 @@ public sealed class TweakEngine : ITweakEngine
                     {
                         res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, cur, baseStr, "Baseline службы неполон, восстановление невозможно");
                     }
+                    else if (a.Task != null && !be.Task!.Exists)
+                    {
+                        res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, cur, baseStr, "Задачи не было в baseline, восстановление невозможно");
+                    }
                     else
                     {
                         if (a.Registry != null) _env.Registry.Write(a.Registry.Path, a.Registry.Name, be.Registry!);
-                        else _env.Services.SetStartType(a.Service!.Name, be.Service!.Start);
+                        else if (a.Service != null) _env.Services.SetStartType(a.Service.Name, be.Service!.Start);
+                        else Tasks.SetEnabled(a.Task!.Path, be.Task!.Enabled);
                         var after = CurrentStr(a);
-                        bool ok = a.Registry != null
-                            ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), be.Registry!)
-                            : Same(_env.Services.Read(a.Service!.Name), be.Service!);
+                        bool ok = IsBaseNow();
                         res = ok
                             ? new ReportEntry(t.Id, a.Id, ActionStatus.Reverted, cur, after, baseStr)
                             : new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, after, baseStr, "После восстановления значение не совпало с baseline");

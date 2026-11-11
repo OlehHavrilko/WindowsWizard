@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WizardOS tweak card",
+  "description": "Схема карточки твика (подсказки в редакторе). Источник истины — TweakCatalog.Validate; запретные цели (Defender/Hyper-V/WSL) проверяет только движок.",
+  "type": "object",
+  "required": ["id", "title", "verdict", "stability", "intent", "evidence", "actions"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "verdict": { "enum": ["Core", "Standard", "Option", "Lab"] },
+    "stability": { "enum": ["Stable", "Moderate", "Fragile"] },
+    "intent": { "type": "string", "minLength": 1 },
+    "evidence": { "type": "string", "minLength": 1, "description": "Измеримый эффект; без него твик не входит." },
+    "category": { "type": "string" },
+    "scope": { "enum": ["machine", "user"] },
+    "risk": { "enum": ["T0", "T1", "T2", "T3", "T4"] },
+    "reversibility": { "type": "string" },
+    "gate": { "type": "string" },
+    "rationale": { "type": "string" },
+    "breaks": { "type": "string" },
+    "verification": { "type": "string" },
+    "delay": { "enum": ["none", "reboot", "relogon"] },
+    "source": { "type": "string" },
+    "status": { "enum": ["proposed", "accepted", "verified", "rejected"] },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "registry": {
+            "type": "object",
+            "required": ["path", "name", "kind", "data"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "pattern": "^(HKLM|HKCU)\\\\" },
+              "name": { "type": "string" },
+              "kind": { "enum": ["DWord", "QWord", "String", "ExpandString", "MultiString", "Binary"] },
+              "data": { "type": "string" }
+            }
+          },
+          "service": {
+            "type": "object",
+            "required": ["name", "start"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "start": { "enum": ["Boot", "System", "Automatic", "Manual", "Disabled"] }
+            }
+          },
+          "task": {
+            "type": "object",
+            "required": ["path", "state"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "pattern": "^\\\\.+[^\\\\]$" },
+              "state": { "enum": ["enabled", "disabled"] }
+            }
+          }
+        },
+        "oneOf": [
+          { "required": ["registry"] },
+          { "required": ["service"] },
+          { "required": ["task"] }
+        ]
+      }
+    }
+  }
+}

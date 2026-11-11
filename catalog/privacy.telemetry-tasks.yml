@@ -1,0 +1,25 @@
+id: privacy.telemetry-tasks
+title: "Задачи сбора телеметрии в планировщике отключены"
+verdict: Standard
+stability: Fragile
+category: task
+scope: machine
+risk: T2
+status: accepted
+intent: "Отключить задачи планировщика, которые собирают и отправляют данные программ и телеметрию (Compatibility Appraiser, CEIP). Системные задачи обслуживания и обновления не затрагиваются."
+evidence: "Состояние задач \\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser, \\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator и UsbCeip = Disabled; процесс CompatTelRunner.exe не запускается по расписанию (замер Bench Harness)."
+reversibility: "revert по baseline: задачи возвращаются в исходное состояние"
+breaks: "Компоненты обновления могут пересоздавать и включать задачи (класс Fragile): после крупного обновления нужен verify."
+actions:
+  - id: compat-appraiser
+    task:
+      path: '\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser'
+      state: disabled
+  - id: ceip-consolidator
+    task:
+      path: '\Microsoft\Windows\Customer Experience Improvement Program\Consolidator'
+      state: disabled
+  - id: ceip-usb
+    task:
+      path: '\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip'
+      state: disabled

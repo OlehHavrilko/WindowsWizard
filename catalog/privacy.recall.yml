@@ -1,0 +1,18 @@
+id: privacy.recall
+title: "Recall: анализ данных и снимки выключены"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Запретить Windows AI анализировать действия пользователя и сохранять снимки (Recall) политикой."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI: DisableAIDataAnalysis = 1; каталог снимков %LocalAppData%\\CoreAIPlatform.00 не пополняется (замер размера за сутки)."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+actions:
+  - id: disable-ai-data-analysis
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI'
+      name: DisableAIDataAnalysis
+      kind: DWord
+      data: "1"
