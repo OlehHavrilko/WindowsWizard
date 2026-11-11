@@ -75,7 +75,7 @@ WindowsWizard/                  (локальный каталог: winoptimizer
 | Утверждение | Статус |
 |---|---|
 | Репозиторий `OlehHavrilko/WindowsWizard`: public, ветка `main` | проверено `gh repo view` 11.11.2026 |
-| Документация залита в `main` | коммит `0552507`, 11.11.2026 |
+| Документация залита в `main` | 11.11.2026 |
 | `.apbx` = 7z с паролем `malte` | проверено по докам AME |
 | Структура `playbook.conf` + `Configuration/main.yml` + `Configuration/Tasks/*.yml` + `Executables/` | проверено по докам AME |
 | Набор действий (`!registryValue`, `!service`, `!appx`, `!systemPackage`, `!task`, …) | проверено по докам AME |
