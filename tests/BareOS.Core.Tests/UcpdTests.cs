@@ -129,6 +129,61 @@ public class UcpdTests
         Assert.Equal(ActionStatus.Mismatch, rep.Entries.Single().Status);
     }
 
+    [Fact]
+    public void Apply_ProtectedKey_PolicyFallback_AppliesViaGpo()
+    {
+        var r = WithUcpd().WithPolicy();
+        r.Reg.DenyWriteKeys.Add(Dsh);
+        var tw = new[] { T("t", Dw("news", "AllowNewsAndInterests", 0, Dsh)) };
+        var rep = r.Engine.Apply(tw);
+        Assert.True(rep.Ok);
+        var e = rep.Entries.Single();
+        Assert.Equal(ActionStatus.Applied, e.Status);
+        Assert.Contains("групповую политику", e.Error);
+        Assert.Equal(D(0), r.Reg.Read(Dsh, "AllowNewsAndInterests"));
+        Assert.Single(r.Policy!.Calls);
+    }
+
+    [Fact]
+    public void Apply_ProtectedKey_PolicyFallbackFails_StaysBlockedByOS()
+    {
+        var r = WithUcpd().WithPolicy();
+        r.Policy!.Succeeds = false;
+        r.Reg.DenyWriteKeys.Add(Dsh);
+        var tw = new[] { T("t", Dw("news", "AllowNewsAndInterests", 0, Dsh)) };
+        var rep = r.Engine.Apply(tw);
+        Assert.True(rep.Ok);
+        Assert.Equal(ActionStatus.BlockedByOS, rep.Entries.Single().Status);
+        Assert.Single(r.Policy.Calls);
+    }
+
+    [Fact]
+    public void Apply_PolicyFallback_NotTriedForUnprotectedKey()
+    {
+        var r = WithUcpd().WithPolicy();
+        r.Reg.DenyWriteKeys.Add(K);
+        var rep = r.Engine.Apply(new[] { T("t", Dw("a", "A", 0)) });
+        Assert.False(rep.Ok);
+        Assert.Equal(ActionStatus.Failed, rep.Entries.Single().Status);
+        Assert.Empty(r.Policy!.Calls);
+    }
+
+    [Fact]
+    public void Revert_ValueWriteBlocked_PolicyFallback_RevertsViaGpo()
+    {
+        var r = WithUcpd();
+        r.Reg.Set(Dsh, "AllowNewsAndInterests", D(1));
+        var tw = new[] { T("t", Dw("news", "AllowNewsAndInterests", 0, Dsh)) };
+        Assert.True(r.Engine.Apply(tw).Ok);
+        r.WithPolicy();
+        r.Reg.DenyWriteKeys.Add(Dsh);                     // после перезагрузки UCPD закрыл ключ
+        var rev = r.NextRun("run2").Revert(tw);
+        Assert.True(rev.Ok);
+        var e = rev.Entries.Single();
+        Assert.Equal(ActionStatus.Reverted, e.Status);
+        Assert.Equal(D(1), r.Reg.Read(Dsh, "AllowNewsAndInterests"));
+    }
+
     [Theory]
     [InlineData(@"HKLM\SOFTWARE\Policies\Microsoft\Dsh", "AllowNewsAndInterests", true)]
     [InlineData(@"hklm\software\policies\microsoft\dsh\Sub", "X", true)]

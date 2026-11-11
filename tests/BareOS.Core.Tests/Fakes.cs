@@ -46,6 +46,34 @@ public sealed class FakeRegistry : IRegistryAccess
 
     public void Set(string path, string name, RegValue v) { Values[Key(path, name)] = v; Keys.Add(path); }
     public void SetDword(string path, string name, int d) => Set(path, name, new RegValue(true, RegKind.DWord, d.ToString()));
+
+    /// <summary>Запись как если бы её сделал другой процесс (gpsvc после gpupdate): минует DenyWriteKeys/FailWhen,
+    /// которые симулируют отказ именно нашему процессу, не системе в целом.</summary>
+    public void ForceWrite(string path, string name, RegValue value)
+    {
+        Writes.Add($"{path}|{name}|policy");
+        if (value.Exists) { Keys.Add(path); Values[Key(path, name)] = value; }
+        else Values.Remove(Key(path, name));
+    }
+}
+
+/// <summary>Фальшивая групповая политика (D-031): по умолчанию «успешно пишет» прямо в реестр, минуя DenyWriteKeys,
+/// — так в тестах моделируется, что запись через gpupdate обходит отказ, который получает только наш процесс.</summary>
+public sealed class FakePolicyWriter : IPolicyWriter
+{
+    private readonly FakeRegistry _registry;
+    public List<(string Path, string Name, RegValue Value)> Calls = new();
+    public bool Succeeds = true;
+
+    public FakePolicyWriter(FakeRegistry registry) => _registry = registry;
+
+    public bool TrySet(string path, string name, RegValue value)
+    {
+        Calls.Add((path, name, value));
+        if (!Succeeds) return false;
+        _registry.ForceWrite(path, name, value);
+        return true;
+    }
 }
 
 public sealed class FakeServices : IServiceAccess
@@ -124,6 +152,10 @@ public sealed class Rig
     public ITweakEngine Engine;
     public const string K = @"HKLM\SOFTWARE\Test";
 
+    /// <summary>Обход UCPD через групповую политику (D-031). Null в большинстве тестов: фолбэк выключен,
+    /// блокировка остаётся BlockedByOS, как до D-031.</summary>
+    public FakePolicyWriter? Policy;
+
     private DateTimeOffset _now = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
     private readonly IRunStore _store;
 
@@ -134,13 +166,21 @@ public sealed class Rig
     }
 
     private ITweakEngine Make(string runId)
-        => new TweakEngine(new EngineEnv(Reg, Svc, () => _now, Tasks), _store, runId);
+        => new TweakEngine(new EngineEnv(Reg, Svc, () => _now, Tasks, Policy), _store, runId);
 
     /// <summary>Новый прогон (новый процесс bareos) на том же хранилище и той же «системе», на минуту позже.</summary>
     public ITweakEngine NextRun(string runId)
     {
         _now = _now.AddMinutes(1);
         return Make(runId);
+    }
+
+    /// <summary>Включает обход UCPD через групповую политику (D-031) и пересоздаёт Engine с тем же runId.</summary>
+    public Rig WithPolicy()
+    {
+        Policy = new FakePolicyWriter(Reg);
+        Engine = Make("run1");
+        return this;
     }
 
     public static Tweak T(string id, params TweakAction[] a) =>

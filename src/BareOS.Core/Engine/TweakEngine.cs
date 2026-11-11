@@ -164,6 +164,14 @@ public sealed class TweakEngine : ITweakEngine
             }
             catch (Exception ex)
             {
+                if (a.Registry != null && TryPolicyFallback(a.Registry.Path, a.Registry.Name, ExpectedReg(a.Registry), ex))
+                {
+                    var after = CurrentStr(a);
+                    var viaPolicy = new ReportEntry(t.Id, a.Id, ActionStatus.Applied, before, after, expected,
+                        "Применено через локальную групповую политику: прямую запись блокирует UCPD (D-031)");
+                    entries.Add(viaPolicy); TryJournal(viaPolicy);
+                    continue;
+                }
                 var blocked = Blocked(t, a, ex, before, expected, ex.Message);
                 if (blocked is not null) { entries.Add(blocked); TryJournal(blocked); continue; }   // блокировка ОС не сбой движка: остальные действия выполняются
                 var res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, before, "", expected, ex.Message);
@@ -197,6 +205,13 @@ public sealed class TweakEngine : ITweakEngine
     }
 
     private void TryJournal(ReportEntry e) { try { Journal(e); } catch { } }
+
+    /// <summary>Обход блокировки UCPD через локальную групповую политику (D-031): только если отказ — именно
+    /// блокировка ОС на известном защищённом ключе и обход включён (EngineEnv.Policy != null).</summary>
+    private bool TryPolicyFallback(string path, string name, RegValue value, Exception error)
+        => _env.Policy != null
+           && UcpdGuard.IsBlockedByOs(_env.Services, path, name, error)
+           && _env.Policy.TrySet(path, name, value);
 
     private Report Finish(string cmd, List<ReportEntry> entries)
     {
@@ -287,7 +302,11 @@ public sealed class TweakEngine : ITweakEngine
                     {
                         if (a.Registry != null)
                         {
-                            _env.Registry.Write(a.Registry.Path, a.Registry.Name, be.Registry!);
+                            try { _env.Registry.Write(a.Registry.Path, a.Registry.Name, be.Registry!); }
+                            catch (Exception wex) when (TryPolicyFallback(a.Registry.Path, a.Registry.Name, be.Registry!, wex))
+                            {
+                                // восстановлено через локальную групповую политику (D-031)
+                            }
                             if (!be.Registry!.Exists && be.KeyExisted == false)   // ключ создал apply
                             {
                                 try { _env.Registry.DeleteKeyIfEmpty(a.Registry.Path); }

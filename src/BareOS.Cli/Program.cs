@@ -125,7 +125,10 @@ public static class Program
 
     private static int Execute(string command, IReadOnlyList<Tweak> tweaks, string dataDir, bool json)
     {
-        var env = new EngineEnv(new RegistryAccess(), new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess());
+        var registry = new RegistryAccess();
+        // Обход блокировки UCPD через локальную групповую политику (D-031): пишем через gpsvc, когда прямая запись
+        // запрещена ОС. Защиту не отключает, поэтому включён всегда, в отличие от отключения самой службы UCPD.
+        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry));
         // миллисекунды + суффикс: два прогона в одну секунду не должны делить каталог (baseline не перезаписывается → preflight падал бы)
         var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..4];
         var jsonStore = new JsonRunStore(dataDir);
