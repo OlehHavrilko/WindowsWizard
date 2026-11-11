@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>wizardos</AssemblyName>
+    <RootNamespace>WizardOS.Cli</RootNamespace>
+  </PropertyGroup>
+  <!-- D-027: self-contained single-file win-x64 — только при publish (-p:PublishProfile / -r win-x64), обычный build не затронут -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' Or '$(RuntimeIdentifier)' == 'win-x64'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WizardOS.Core\WizardOS.Core.csproj" />
+  </ItemGroup>
+</Project>

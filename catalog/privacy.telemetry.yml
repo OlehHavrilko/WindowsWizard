@@ -1,0 +1,21 @@
+id: privacy.telemetry
+title: "Телеметрия: уровень диагностики 0 и служба DiagTrack отключена"
+verdict: Core
+stability: Moderate
+category: privacy
+scope: machine
+risk: T2
+status: accepted
+intent: "Отключить отправку диагностических данных политикой и остановить службу Connected User Experiences and Telemetry (DiagTrack)."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection\\AllowTelemetry = 0; служба DiagTrack: Start = 4 (Disabled), число запущенных служб после входа уменьшается на 1 (замер Bench Harness)."
+actions:
+  - id: allow-telemetry
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+      name: AllowTelemetry
+      kind: DWord
+      data: "0"
+  - id: diagtrack-service
+    service:
+      name: DiagTrack
+      start: Disabled

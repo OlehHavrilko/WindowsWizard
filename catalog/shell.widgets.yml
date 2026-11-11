@@ -1,0 +1,17 @@
+id: shell.widgets
+title: "Виджеты и «Новости и интересы» выключены"
+verdict: Standard
+stability: Moderate
+category: convenience
+scope: machine
+risk: T1
+status: accepted
+intent: "Отключить панель виджетов политикой, чтобы не запускались фоновые процессы виджетов и ленты новостей."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Dsh\\AllowNewsAndInterests = 0; число процессов Widgets*/WebExperience после входа = 0 (замер Bench Harness)."
+actions:
+  - id: allow-news-and-interests
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Dsh'
+      name: AllowNewsAndInterests
+      kind: DWord
+      data: "0"
