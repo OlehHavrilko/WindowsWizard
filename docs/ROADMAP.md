@@ -130,6 +130,6 @@ v0.0 → v0.1 → v0.2 → v0.3 → v0.4 → v0.5 → v1.0
 
 ## Ближайший шаг
 
-Репозиторий: <https://github.com/OlehHavrilko/WindowsWizard> (public, `main`), локальная копия — `D:\Projects\codex\winoptimizer`. Документация залита в `main`; дальнейшие commit/push — по прямой команде — [DECISIONS](DECISIONS.md) D-013.
+Репозиторий: <https://github.com/OlehHavrilko/WindowsWizard> (public, `main`), локальная копия — `D:\Projects\codex\winoptimizer`. PR и merge Claude выполняет сам ([DECISIONS](DECISIONS.md) D-026). D-002 и D-003 подтверждены, название — WizardOS (D-025).
 
-v0.1 требует двух решений владельца до начала работы: подтвердить D-002 (Defender не трогаем) и D-003 (BitLocker на ISO-пути). Они влияют на `playbook.conf` и на состав первого прогона, поэтому решаются до первой строки YAML.
+Следующее: привести [ARCHITECTURE](ARCHITECTURE.md) §3 и этапы этой карты к схеме D-023 (движок → playbook → Toolbox), затем каркас .NET-движка с командами `plan`, `apply`, `verify`, `revert`.
