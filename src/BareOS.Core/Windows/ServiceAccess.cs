@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using System.ServiceProcess;
 using Microsoft.Win32;
 
 namespace BareOS.Core.Windows;
@@ -15,40 +16,45 @@ public sealed class ServiceAccess : IServiceAccess
         return st.Exists ? st with { Running = IsRunning(name) } : st;
     }
 
+    // Состояние и запуск/остановка — через ServiceController: разбор вывода sc.exe зависит от языка системы
+    // (в русской Windows строка «STATE» называется «СОСТОЯНИЕ»), поэтому Running всегда читался как false.
     public void StopService(string name)
     {
         if (!OperatingSystem.IsWindows()) throw NotWindows();
-        var (code, output) = Sc("stop", name);
-        if (code != 0 && code != 1062)   // 1062 — служба уже остановлена
-            throw new InvalidOperationException($"sc.exe stop {name} завершился с кодом {code}: {output.Trim()}");
+        StopCore(name);
     }
 
     public void StartService(string name)
     {
         if (!OperatingSystem.IsWindows()) throw NotWindows();
-        var (code, output) = Sc("start", name);
-        if (code != 0 && code != 1056)   // 1056 — служба уже запущена
-            throw new InvalidOperationException($"sc.exe start {name} завершился с кодом {code}: {output.Trim()}");
+        StartCore(name);
     }
 
-    /// <summary>STATE: 4 = RUNNING (числовой код не зависит от языка системы).</summary>
+    private static readonly TimeSpan ServiceTimeout = TimeSpan.FromSeconds(30);
+
+    [SupportedOSPlatform("windows")]
     private static bool IsRunning(string name)
     {
-        var (code, output) = Sc("query", name);
-        if (code != 0) return false;
-        var m = System.Text.RegularExpressions.Regex.Match(output, @"STATE\s*:\s*(\d+)", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(2));
-        return m.Success && m.Groups[1].Value == "4";
+        using var sc = new ServiceController(name);
+        return sc.Status == ServiceControllerStatus.Running;
     }
 
-    private static (int Code, string Output) Sc(params string[] args)
+    [SupportedOSPlatform("windows")]
+    private static void StopCore(string name)
     {
-        var psi = new ProcessStartInfo("sc.exe") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
-        foreach (var a in args) psi.ArgumentList.Add(a);
-        using var p = Process.Start(psi) ?? throw new InvalidOperationException("Не удалось запустить sc.exe");
-        var err = p.StandardError.ReadToEndAsync();
-        var output = p.StandardOutput.ReadToEnd();
-        p.WaitForExit();
-        return (p.ExitCode, output + err.Result);
+        using var sc = new ServiceController(name);
+        if (sc.Status == ServiceControllerStatus.Stopped) return;
+        sc.Stop();
+        sc.WaitForStatus(ServiceControllerStatus.Stopped, ServiceTimeout);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void StartCore(string name)
+    {
+        using var sc = new ServiceController(name);
+        if (sc.Status == ServiceControllerStatus.Running) return;
+        sc.Start();
+        sc.WaitForStatus(ServiceControllerStatus.Running, ServiceTimeout);
     }
 
     public void SetStartType(string name, StartType start)
