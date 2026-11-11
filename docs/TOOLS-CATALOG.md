@@ -1,8 +1,10 @@
-# Каталог open source программ
+# Каталог программ
 
 Содержимое вкладки «Программы» в [TOOLBOX](TOOLBOX.md). Черновик от 2026-11-11.
 
-Правила приёма: открытый исходный код, активная разработка, установка через winget. Идентификаторы winget, лицензии и актуальность проверяются при реализации — здесь только названия. Закрытые программы в каталог не входят, даже бесплатные.
+Правила приёма: бесплатно, активная разработка, установка через winget; предпочтение — открытому коду. Бесплатные закрытые программы допускаются с пометкой ([DECISIONS](DECISIONS.md) D-024). Идентификаторы winget, лицензии и актуальность проверяются при реализации — здесь только названия.
+
+## Открытый код
 
 | Категория | Программы |
 |---|---|
@@ -18,6 +20,16 @@
 | Сеть и обмен файлами | qBittorrent, LocalSend, Syncthing, WinSCP, Wireshark |
 | Оформление | Windhawk, ExplorerPatcher, TranslucentTB, Rainmeter, EarTrumpet, Nilesoft Shell |
 | Офис и заметки | LibreOffice, ONLYOFFICE, Joplin, Logseq, SumatraPDF, Thunderbird |
+
+## Бесплатные с закрытым кодом
+
+| Категория | Программы |
+|---|---|
+| Игры и общение | Steam, Epic Games Launcher, GOG Galaxy, Discord, Telegram |
+| Мониторинг и разгон | HWiNFO, MSI Afterburner + RTSS, FanControl, CPU-Z, GPU-Z |
+| Система | Everything, WizTree, Sysinternals Suite, Display Driver Uninstaller |
+| Видеокарта | NVCleanstall, NVIDIA Profile Inspector, NVIDIA App, AMD Software |
+| Разработка | Visual Studio Code, Docker Desktop, JetBrains Toolbox |
 
 ## Наборы
 
