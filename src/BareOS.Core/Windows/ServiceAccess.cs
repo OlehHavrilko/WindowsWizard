@@ -11,7 +11,44 @@ public sealed class ServiceAccess : IServiceAccess
     public ServiceState Read(string name)
     {
         if (!OperatingSystem.IsWindows()) throw NotWindows();
-        return ReadCore(name);
+        var st = ReadCore(name);
+        return st.Exists ? st with { Running = IsRunning(name) } : st;
+    }
+
+    public void StopService(string name)
+    {
+        if (!OperatingSystem.IsWindows()) throw NotWindows();
+        var (code, output) = Sc("stop", name);
+        if (code != 0 && code != 1062)   // 1062 — служба уже остановлена
+            throw new InvalidOperationException($"sc.exe stop {name} завершился с кодом {code}: {output.Trim()}");
+    }
+
+    public void StartService(string name)
+    {
+        if (!OperatingSystem.IsWindows()) throw NotWindows();
+        var (code, output) = Sc("start", name);
+        if (code != 0 && code != 1056)   // 1056 — служба уже запущена
+            throw new InvalidOperationException($"sc.exe start {name} завершился с кодом {code}: {output.Trim()}");
+    }
+
+    /// <summary>STATE: 4 = RUNNING (числовой код не зависит от языка системы).</summary>
+    private static bool IsRunning(string name)
+    {
+        var (code, output) = Sc("query", name);
+        if (code != 0) return false;
+        var m = System.Text.RegularExpressions.Regex.Match(output, @"STATE\s*:\s*(\d+)", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(2));
+        return m.Success && m.Groups[1].Value == "4";
+    }
+
+    private static (int Code, string Output) Sc(params string[] args)
+    {
+        var psi = new ProcessStartInfo("sc.exe") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
+        foreach (var a in args) psi.ArgumentList.Add(a);
+        using var p = Process.Start(psi) ?? throw new InvalidOperationException("Не удалось запустить sc.exe");
+        var err = p.StandardError.ReadToEndAsync();
+        var output = p.StandardOutput.ReadToEnd();
+        p.WaitForExit();
+        return (p.ExitCode, output + err.Result);
     }
 
     public void SetStartType(string name, StartType start)

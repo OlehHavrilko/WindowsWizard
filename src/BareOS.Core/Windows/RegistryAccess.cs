@@ -20,6 +20,47 @@ public sealed class RegistryAccess : IRegistryAccess
         WriteCore(path, name, value);
     }
 
+    public bool KeyExists(string path)
+    {
+        if (!OperatingSystem.IsWindows()) throw NotWindows();
+        return KeyExistsCore(path);
+    }
+
+    public void DeleteKeyIfEmpty(string path)
+    {
+        if (!OperatingSystem.IsWindows()) throw NotWindows();
+        DeleteKeyIfEmptyCore(path);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static bool KeyExistsCore(string path)
+    {
+        var (root, sub) = Split(path);
+        using (root)
+        using (var key = root.OpenSubKey(sub, writable: false))
+            return key is not null;
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void DeleteKeyIfEmptyCore(string path)
+    {
+        var (root, sub) = Split(path);
+        using (root)
+        {
+            var i = sub.LastIndexOf('\\');
+            if (i < 0) return;   // корень куста не трогаем
+            var parentSub = sub[..i];
+            var leaf = sub[(i + 1)..];
+            using var parent = root.OpenSubKey(parentSub, writable: true);
+            if (parent is null) return;
+            using (var key = parent.OpenSubKey(leaf, writable: false))
+            {
+                if (key is null || key.ValueCount != 0 || key.SubKeyCount != 0) return;
+            }
+            parent.DeleteSubKey(leaf, throwOnMissingSubKey: false);
+        }
+    }
+
     private static PlatformNotSupportedException NotWindows() => new PlatformNotSupportedException("RegistryAccess работает только в Windows.");
 
     [SupportedOSPlatform("windows")]

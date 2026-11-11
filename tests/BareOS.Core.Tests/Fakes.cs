@@ -6,6 +6,8 @@ namespace BareOS.Core.Tests;
 public sealed class FakeRegistry : IRegistryAccess
 {
     public Dictionary<(string, string), RegValue> Values = new();
+    public HashSet<string> Keys = new(StringComparer.OrdinalIgnoreCase);
+    public List<string> DeletedKeys = new();
     public List<string> Writes = new();
     /// <summary>Если вернёт true — запись падает исключением.</summary>
     public Func<string, string, RegValue, bool>? FailWhen;
@@ -20,11 +22,20 @@ public sealed class FakeRegistry : IRegistryAccess
         if (FailWhen?.Invoke(path, name, value) == true)
             throw new IOException($"injected write failure {path}\\{name}");
         Writes.Add($"{path}|{name}");
+        if (value.Exists) Keys.Add(path);
         if (!value.Exists) Values.Remove(Key(path, name));
         else Values[Key(path, name)] = value;
     }
 
-    public void Set(string path, string name, RegValue v) => Values[Key(path, name)] = v;
+    public bool KeyExists(string path) => Keys.Contains(path) || Values.Keys.Any(k => k.Item1 == path.ToUpperInvariant());
+
+    public void DeleteKeyIfEmpty(string path)
+    {
+        if (Values.Keys.Any(k => k.Item1 == path.ToUpperInvariant())) return;
+        if (Keys.Remove(path)) DeletedKeys.Add(path);
+    }
+
+    public void Set(string path, string name, RegValue v) { Values[Key(path, name)] = v; Keys.Add(path); }
     public void SetDword(string path, string name, int d) => Set(path, name, new RegValue(true, RegKind.DWord, d.ToString()));
 }
 
@@ -40,7 +51,19 @@ public sealed class FakeServices : IServiceAccess
     {
         if (FailWhen?.Invoke(name, start) == true) throw new IOException("injected service failure " + name);
         Writes.Add($"{name}|{start}");
-        States[name] = new ServiceState(true, start);
+        States[name] = (States.TryGetValue(name, out var old) ? old : new ServiceState(true)) with { Start = start };
+    }
+
+    public void StopService(string name)
+    {
+        Writes.Add($"stop:{name}");
+        States[name] = States[name] with { Running = false };
+    }
+
+    public void StartService(string name)
+    {
+        Writes.Add($"start:{name}");
+        States[name] = States[name] with { Running = true };
     }
 }
 
