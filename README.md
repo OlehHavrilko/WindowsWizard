@@ -46,6 +46,9 @@
 | На чём и как тестировать | [TEST-MATRIX](docs/TEST-MATRIX.md) |
 | Этапы от документации до релиза | [ROADMAP](docs/ROADMAP.md) |
 | Риски и их снижение | [RISKS](docs/RISKS.md) |
+| Требования к реализации: план, baseline, журнал, остановка, откат | [EXECUTION-CONTRACT](docs/EXECUTION-CONTRACT.md) |
+| Ревизия каркаса: что уточнено и что осталось до начала реализации | [REVIEW](docs/REVIEW.md) |
+| Источники и границы подтверждения | [SOURCES](docs/SOURCES.md) |
 
 ## Структура репозитория
 
