@@ -88,7 +88,10 @@ public sealed record Tweak(
 
 // ===== План, снимок, отчёт =====
 
-public enum ActionStatus { Planned, Started, Applied, AlreadyApplied, Failed, Skipped, Unknown, Verified, Mismatch, Reverted, Conflict, NothingToRevert }
+public enum ActionStatus { Planned, Started, Applied, AlreadyApplied, Failed, Skipped, Unknown, Verified, Mismatch, Reverted, Conflict, NothingToRevert,
+    /// <summary>Запись/удаление запретила сама ОС (драйвер UCPD защищает ключ, D-030). Не ошибка движка: apply/revert/verify не дают из-за него код 1.
+    /// Добавлено в конец: имена в журналах и отчётах строковые.</summary>
+    BlockedByOS }
 
 public sealed record PlanEntry(string TweakId, string ActionId, string Target, string Before, string Expected);
 public sealed record Plan(string FormatVersion, string RunId, DateTimeOffset CreatedAt, IReadOnlyList<PlanEntry> Entries);
@@ -105,7 +108,8 @@ public sealed record ReportEntry(string TweakId, string ActionId, ActionStatus S
 public sealed record Report(string FormatVersion, string RunId, string Command, DateTimeOffset At, IReadOnlyList<ReportEntry> Entries)
 {
     public bool Ok => Entries.All(e => e.Status is ActionStatus.Applied or ActionStatus.AlreadyApplied or ActionStatus.Verified
-                                            or ActionStatus.Reverted or ActionStatus.NothingToRevert or ActionStatus.Skipped);
+                                            or ActionStatus.Reverted or ActionStatus.NothingToRevert or ActionStatus.Skipped
+                                            or ActionStatus.BlockedByOS);
 }
 
 /// <summary>Хранилище прогонов: %ProgramData%\BareOS\runs\&lt;runId&gt;\ (путь передаётся снаружи).

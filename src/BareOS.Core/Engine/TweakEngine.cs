@@ -164,6 +164,8 @@ public sealed class TweakEngine : ITweakEngine
             }
             catch (Exception ex)
             {
+                var blocked = Blocked(t, a, ex, before, expected, ex.Message);
+                if (blocked is not null) { entries.Add(blocked); TryJournal(blocked); continue; }   // блокировка ОС не сбой движка: остальные действия выполняются
                 var res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, before, "", expected, ex.Message);
                 entries.Add(res); TryJournal(res);
                 failed = true;
@@ -186,6 +188,14 @@ public sealed class TweakEngine : ITweakEngine
         else Tasks.SetEnabled(a.Task!.Path, a.Task.Enabled);
     }
 
+    /// <summary>BlockedByOS, если отказ в реестровом действии вызван UCPD (см. <see cref="UcpdGuard"/>); иначе null.
+    /// <paramref name="error"/> = null — отказа не было (verify).</summary>
+    private ReportEntry? Blocked(Tweak t, TweakAction a, Exception? error, string before, string expected, string? detail)
+    {
+        if (a.Registry is null || !UcpdGuard.IsBlockedByOs(_env.Services, a.Registry.Path, a.Registry.Name, error)) return null;
+        return new ReportEntry(t.Id, a.Id, ActionStatus.BlockedByOS, before, before, expected, UcpdGuard.Explain(a.Registry.Path, a.Registry.Name, detail));
+    }
+
     private void TryJournal(ReportEntry e) { try { Journal(e); } catch { } }
 
     private Report Finish(string cmd, List<ReportEntry> entries)
@@ -206,11 +216,15 @@ public sealed class TweakEngine : ITweakEngine
                 try
                 {
                     cur = CurrentStr(a);
-                    entries.Add(new ReportEntry(t.Id, a.Id, MatchesExpected(a) ? ActionStatus.Verified : ActionStatus.Mismatch, cur, cur, expected));
+                    if (MatchesExpected(a)) { entries.Add(new ReportEntry(t.Id, a.Id, ActionStatus.Verified, cur, cur, expected)); continue; }
+                    // Значение не то, а менять его ОС не даёт: проверка неприменима (n/a), не «не совпало».
+                    entries.Add(Blocked(t, a, null, cur, expected, "Проверка неприменима (n/a): значение не совпадает с ожидаемым, но записать его нельзя.")
+                        ?? new ReportEntry(t.Id, a.Id, ActionStatus.Mismatch, cur, cur, expected));
                 }
                 catch (Exception ex)
                 {
-                    entries.Add(new ReportEntry(t.Id, a.Id, ActionStatus.Mismatch, cur, cur, expected, ex.Message));
+                    entries.Add(Blocked(t, a, ex, cur, expected, "Проверка неприменима (n/a): " + ex.Message)
+                        ?? new ReportEntry(t.Id, a.Id, ActionStatus.Mismatch, cur, cur, expected, ex.Message));
                 }
             }
         return Finish("verify", entries);
@@ -277,7 +291,11 @@ public sealed class TweakEngine : ITweakEngine
                             if (!be.Registry!.Exists && be.KeyExisted == false)   // ключ создал apply
                             {
                                 try { _env.Registry.DeleteKeyIfEmpty(a.Registry.Path); }
-                                catch (Exception ex) { keyNote = "Значение восстановлено, но пустой ключ не удалён: " + ex.Message; }
+                                catch (Exception ex)
+                                {
+                                    keyNote = "Значение восстановлено, но пустой ключ не удалён: "
+                                        + (UcpdGuard.IsBlockedByOs(_env.Services, a.Registry.Path, a.Registry.Name, ex) ? UcpdGuard.Reason + ". " : "") + ex.Message;
+                                }
                             }
                         }
                         else if (a.Service != null)
@@ -303,7 +321,9 @@ public sealed class TweakEngine : ITweakEngine
             }
             catch (Exception ex)
             {
-                var res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, "", expected, ex.Message);
+                // откат значения в защищённом UCPD ключе невозможен: не ошибка движка, код выхода не меняется
+                var res = Blocked(t, a, ex, cur, expected, ex.Message)
+                    ?? new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, "", expected, ex.Message);
                 entries.Add(res); TryJournal(res);
             }
         }

@@ -17,7 +17,7 @@ public static class Program
           --run <id|latest> (report) прогон для отчёта, по умолчанию latest
           --json            вывод в JSON
         validate — проверить каталог карточек и выйти (CI).
-        Код выхода: 0 — всё в порядке, 1 — есть проблемы, 2 — ошибка использования, валидации или среды (нет прав, замок занят).
+        Код выхода: 0 — всё в порядке (в т. ч. BlockedByOS — заблокировано ОС (UCPD)), 1 — есть проблемы, 2 — ошибка использования, валидации или среды (нет прав, замок занят).
         """;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -188,6 +188,8 @@ public static class Program
             r.Entries.Select(e => new[] { e.Status.ToString(), $"{e.TweakId}/{e.ActionId}", e.Before, e.After, e.Expected }));
         foreach (var e in r.Entries.Where(e => e.Error is not null))
             Console.WriteLine($"  ! {e.TweakId}/{e.ActionId}: {e.Error}");
+        if (r.Entries.Any(e => e.Status == ActionStatus.BlockedByOS))
+            Console.WriteLine($"  Примечание: BlockedByOS — {UcpdGuard.Reason}. Это не ошибка Bare OS и не влияет на код выхода; UCPD не отключается и не обходится (D-030).");
     }
 
     private static void PrintTable(string[] headers, IEnumerable<string[]> rows)

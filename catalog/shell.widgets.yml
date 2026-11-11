@@ -5,9 +5,12 @@ stability: Moderate
 category: convenience
 scope: machine
 risk: T1
-status: accepted
+status: proposed
 intent: "Отключить панель виджетов политикой, чтобы не запускались фоновые процессы виджетов и ленты новостей."
-evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Dsh\\AllowNewsAndInterests = 0; число процессов Widgets*/WebExperience после входа = 0 (замер Bench Harness)."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Dsh\\AllowNewsAndInterests = 0; число процессов Widgets*/WebExperience после входа = 0 (замер Bench Harness). Блокировка: на Windows 11 24H2+ запись и удаление этого значения закрывает драйвер UCPD.sys (на ВМ после перезагрузки bareos получает UnauthorizedAccess, из PowerShell запись тоже блокируется); apply даёт BlockedByOS (заблокировано ОС (UCPD)), D-030."
+rationale: "Нужен проверенный способ, который UCPD не блокирует. Гипотеза, не проверена: групповая политика через Registry.pol (gpedit/LGPO). UCPD не отключаем и не обходим (D-030); карточка остаётся proposed, пока способ не подтверждён на ВМ."
+breaks: "На 24H2+ значение может не примениться: движок сообщает BlockedByOS, система остаётся как была."
+source: "Наблюдение на ВМ 24H2+ (UCPD.sys закрывает HKLM\\SOFTWARE\\Policies\\Microsoft\\Dsh); политика Registry.pol как путь — гипотеза."
 actions:
   - id: allow-news-and-interests
     registry:

@@ -13,6 +13,11 @@ public sealed class FakeRegistry : IRegistryAccess
     /// <summary>Если вернёт true — запись падает исключением.</summary>
     public Func<string, string, RegValue, bool>? FailWhen;
 
+    /// <summary>Пути, запись в которые запрещает «ОС» (как UCPD): Write бросает UnauthorizedAccessException.</summary>
+    public HashSet<string> DenyWriteKeys = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Пути, удаление которых запрещено «ОС»: DeleteKeyIfEmpty бросает UnauthorizedAccessException.</summary>
+    public HashSet<string> DenyDeleteKeys = new(StringComparer.OrdinalIgnoreCase);
+
     static (string, string) Key(string p, string n) => (p.ToUpperInvariant(), n.ToLowerInvariant());
 
     public RegValue Read(string path, string name) =>
@@ -22,6 +27,7 @@ public sealed class FakeRegistry : IRegistryAccess
     {
         if (FailWhen?.Invoke(path, name, value) == true)
             throw new IOException($"injected write failure {path}\\{name}");
+        if (DenyWriteKeys.Contains(path)) throw new UnauthorizedAccessException($"Access to the registry key '{path}' is denied.");
         Writes.Add($"{path}|{name}");
         if (value.Exists) Keys.Add(path);
         if (!value.Exists) Values.Remove(Key(path, name));
@@ -32,6 +38,7 @@ public sealed class FakeRegistry : IRegistryAccess
 
     public void DeleteKeyIfEmpty(string path)
     {
+        if (DenyDeleteKeys.Contains(path)) throw new UnauthorizedAccessException($"Access to the registry key '{path}' is denied.");
         if (FailDeleteKey) throw new UnauthorizedAccessException("injected key delete failure");
         if (Values.Keys.Any(k => k.Item1 == path.ToUpperInvariant())) return;
         if (Keys.Remove(path)) DeletedKeys.Add(path);
@@ -47,7 +54,14 @@ public sealed class FakeServices : IServiceAccess
     public List<string> Writes = new();
     public Func<string, StartType, bool>? FailWhen;
 
-    public ServiceState Read(string name) => States.TryGetValue(name, out var s) ? s : new ServiceState(false);
+    /// <summary>Чтение состояния службы падает (проверить UCPD нельзя).</summary>
+    public bool ThrowOnRead;
+
+    public ServiceState Read(string name)
+    {
+        if (ThrowOnRead) throw new IOException("injected service read failure " + name);
+        return States.TryGetValue(name, out var s) ? s : new ServiceState(false);
+    }
 
     public void SetStartType(string name, StartType start)
     {

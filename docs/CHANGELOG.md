@@ -4,6 +4,15 @@
 
 ---
 
+## v0.1-dev — блокировка UCPD (D-030)
+
+- Новый статус результата `BlockedByOS` (рядом с `Failed`): отказ «доступ запрещён» при записи/удалении в ключе из списка `UcpdGuard.ProtectedKeys` (Dsh, Windows Feeds\EnableFeeds, NandI, Explorer\Advanced TaskbarDa), когда служба UCPD запущена (не читается — решает ключ). Код выхода не меняется: apply/revert/verify дают 0; verify показывает n/a с причиной; пустой ключ, не удалённый из-за UCPD, — предупреждение при статусе `Reverted`.
+- CLI и отчёт: «заблокировано ОС (UCPD)» с пояснением.
+- Карточка `shell.widgets` переведена в `proposed`: UCPD на 24H2+ закрывает `Dsh\AllowNewsAndInterests`; групповая политика Registry.pol — гипотеза, не проверена.
+- Тесты: `UcpdTests`, `FakeRegistry.DenyWriteKeys/DenyDeleteKeys`, проверка каталога на защищённые UCPD цели.
+
+---
+
 ## v0.1-dev — переименование и аудит
 
 - Продукт переименован WizardOS → Bare OS (D-029): CLI `bareos`, `BareOS.*`, `%ProgramData%\BareOS\runs`. Ранее описанное ниже и в D-001…D-028 под именем WizardOS — то же.
