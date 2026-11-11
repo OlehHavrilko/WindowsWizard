@@ -1,0 +1,20 @@
+# Готовые артефакты
+releases/*.apbx
+*.7z
+*.iso
+*.wim
+*.esd
+
+# Артефакты прогонов и тестов
+tests/artifacts/
+*.log
+*.etl
+*.csv.tmp
+
+# Мусор ОС и редакторов
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
+*~
+.vscode/settings.json
