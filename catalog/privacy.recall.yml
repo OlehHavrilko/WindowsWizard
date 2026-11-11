@@ -7,8 +7,9 @@ scope: machine
 risk: T1
 status: accepted
 intent: "Запретить Windows AI анализировать действия пользователя и сохранять снимки (Recall) политикой."
-evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI: DisableAIDataAnalysis = 1; каталог снимков %LocalAppData%\\CoreAIPlatform.00 не пополняется (замер размера за сутки)."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI: DisableAIDataAnalysis = 1; каталог снимков %LocalAppData%\\CoreAIPlatform.00\\UKP не пополняется (замер размера за сутки)."
 reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+breaks: "Эффект только на Copilot+ PC с компонентом Recall; на остальных ПК политика ставится, но измерять нечего. Значение 1 удаляет уже сделанные снимки."
 actions:
   - id: disable-ai-data-analysis
     registry:

@@ -1,0 +1,12 @@
+root = true
+
+[*.cs]
+# Статанализ (аудит 2026-11-11). Ошибки корректности/безопасности остаются ошибками;
+# ниже — правила, которые сознательно не применяем.
+# RegKind.String — часть контракта и формата карточек.
+dotnet_diagnostic.CA1720.severity = suggestion
+# Привязка actions к SHA (semgrep mutable-action-tag) сознательно не делается: официальные actions по мажорной версии.
+# Микрооптимизации, не влияющие на корректность.
+dotnet_diagnostic.CA1861.severity = suggestion
+dotnet_diagnostic.CA1865.severity = suggestion
+dotnet_diagnostic.CA1826.severity = suggestion

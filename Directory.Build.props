@@ -1,0 +1,9 @@
+<Project>
+  <!-- Статанализ .NET (аудит 2026-11-11): рекомендованный набор правил CA для кода продукта, предупреждения = ошибки.
+       Тесты не входят (CA1707 на именах тестов и т. п.). latest-all — вручную: dotnet build -p:AnalysisLevel=latest-all. -->
+  <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Tests'))">
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

@@ -49,7 +49,7 @@
             "additionalProperties": false,
             "properties": {
               "name": { "type": "string" },
-              "start": { "enum": ["Boot", "System", "Automatic", "Manual", "Disabled"] }
+              "start": { "enum": ["Boot", "System", "Automatic", "AutomaticDelayed", "Manual", "Disabled"] }
             }
           },
           "task": {

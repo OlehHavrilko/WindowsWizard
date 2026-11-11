@@ -7,7 +7,7 @@ scope: machine
 risk: T1
 status: accepted
 intent: "Запретить раздачу и получение обновлений от других компьютеров (peer-to-peer); сами обновления продолжают приходить."
-evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization: DODownloadMode = 0; Get-DeliveryOptimizationStatus не показывает трафика от пиров, исходящий трафик службы DoSvc при простое = 0 (замер Bench Harness)."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization: DODownloadMode = 0; Get-DeliveryOptimizationStatus не показывает трафика от пиров, отдача и загрузка от пиров = 0 по Get-DeliveryOptimizationPerfSnapThisMonth (метаданные DO в облако в режиме 0 продолжают уходить)."
 reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
 actions:
   - id: download-mode-http-only

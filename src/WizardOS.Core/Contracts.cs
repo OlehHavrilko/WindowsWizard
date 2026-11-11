@@ -20,7 +20,9 @@ public interface IRegistryAccess
 }
 
 /// <summary>Доступ к службам Windows.</summary>
-public enum StartType { Boot, System, Automatic, Manual, Disabled, Unknown }
+/// <summary>Тип запуска. AutomaticDelayed = Start=2 и DelayedAutostart=1 (иначе откат терял бы «отложенный запуск»).
+/// Новые значения добавляются только в конец: baseline хранит enum строкой, порядок не важен, но имена — да.</summary>
+public enum StartType { Boot, System, Automatic, Manual, Disabled, Unknown, AutomaticDelayed }
 public sealed record ServiceState(bool Exists, StartType Start = StartType.Unknown);
 public interface IServiceAccess
 {
@@ -87,7 +89,9 @@ public sealed record Plan(string FormatVersion, string RunId, DateTimeOffset Cre
 
 /// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service/Task заполнено.</summary>
 public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null);
-public sealed record Baseline(string FormatVersion, string BaselineId, DateTimeOffset CreatedAt, IReadOnlyList<BaselineEntry> Entries);
+/// <param name="IsRevertMarker">Снимок, записанный после успешного отката: состояние целей после revert. Граница истории —
+/// PickBaseline не заглядывает за него, поэтому уже откатанный apply не «воскресает» при следующем откате.</param>
+public sealed record Baseline(string FormatVersion, string BaselineId, DateTimeOffset CreatedAt, IReadOnlyList<BaselineEntry> Entries, bool IsRevertMarker = false);
 
 /// <summary>Запись журнала/отчёта: статус + доказательство (значение до/после/ожидаемое).</summary>
 public sealed record ReportEntry(string TweakId, string ActionId, ActionStatus Status, string Before, string After, string Expected, string? Error = null);
@@ -103,6 +107,9 @@ public interface IRunStore
 {
     void SaveBaseline(Baseline baseline);            // бросает, если такой baseline уже есть
     Baseline? LoadLatestBaseline();
+    /// <summary>Все baseline, от старых к новым. Revert ищет по каждой цели снимок, сделанный перед реальным изменением,
+    /// поэтому повторный apply (когда всё уже применено) не «затирает» исходное состояние.</summary>
+    IReadOnlyList<Baseline> LoadBaselines();   // по возрастанию CreatedAt
     void SaveReport(Report report);
     void SaveJournalLine(string runId, ReportEntry entry);   // append перед/после каждого действия
 }
@@ -114,5 +121,5 @@ public interface ITweakEngine
     Plan Plan(IReadOnlyList<Tweak> tweaks);                          // только чтение
     Report Apply(IReadOnlyList<Tweak> tweaks);                       // baseline -> preflight -> применение -> verify каждого шага
     Report Verify(IReadOnlyList<Tweak> tweaks);                      // текущее == ожидаемое
-    Report Revert(IReadOnlyList<Tweak> tweaks);                      // по baseline, в обратном порядке; 3-way: текущее/baseline/ожидаемое, иначе Conflict
+    Report Revert(IReadOnlyList<Tweak> tweaks);                      // по baseline (последний снимок цели до её изменения), в обратном порядке; 3-way: текущее/baseline/ожидаемое, иначе Conflict
 }

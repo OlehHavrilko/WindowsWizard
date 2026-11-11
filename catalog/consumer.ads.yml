@@ -5,9 +5,10 @@ stability: Moderate
 category: privacy
 scope: machine
 risk: T1
-status: accepted
+status: proposed
 intent: "Отключить автоустановку рекомендованных приложений и рекламные предложения (Windows Consumer Features, Spotlight/Soft Landing)."
 evidence: "Политики HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent: DisableWindowsConsumerFeatures = 1 и DisableSoftLanding = 1; после первого входа число предустановленных рекламных приложений = 0."
+breaks: "Аудит 2026-11-11: обе политики (CSP Experience/AllowWindowsConsumerFeatures, AllowWindowsTips) работают только в Enterprise/Education — на Pro эффекта нет. Ждёт замены на пользовательские значения ContentDeliveryManager (нужен scope user)."
 actions:
   - id: disable-consumer-features
     registry:

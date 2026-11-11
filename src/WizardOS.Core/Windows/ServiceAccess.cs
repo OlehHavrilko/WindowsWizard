@@ -4,24 +4,25 @@ using Microsoft.Win32;
 
 namespace WizardOS.Core.Windows;
 
-/// <summary>Реализация IServiceAccess: чтение типа запуска из HKLM\SYSTEM\CurrentControlSet\Services\&lt;имя&gt;\Start,
+/// <summary>Реализация IServiceAccess: чтение типа запуска из HKLM\SYSTEM\CurrentControlSet\Services\&lt;имя&gt;\Start (+DelayedAutostart),
 /// запись через <c>sc.exe config &lt;имя&gt; start= ...</c>. На не-Windows бросает PlatformNotSupportedException.</summary>
 public sealed class ServiceAccess : IServiceAccess
 {
     public ServiceState Read(string name)
     {
-        EnsureWindows();
+        if (!OperatingSystem.IsWindows()) throw NotWindows();
         return ReadCore(name);
     }
 
     public void SetStartType(string name, StartType start)
     {
-        EnsureWindows();
+        if (!OperatingSystem.IsWindows()) throw NotWindows();
         var arg = start switch
         {
             StartType.Boot => "boot",
             StartType.System => "system",
             StartType.Automatic => "auto",
+            StartType.AutomaticDelayed => "delayed-auto",
             StartType.Manual => "demand",
             StartType.Disabled => "disabled",
             _ => throw new ArgumentException($"Нельзя установить тип запуска {start}")
@@ -29,11 +30,7 @@ public sealed class ServiceAccess : IServiceAccess
         RunSc(name, arg);
     }
 
-    private static void EnsureWindows()
-    {
-        if (!OperatingSystem.IsWindows())
-            throw new PlatformNotSupportedException("ServiceAccess работает только в Windows.");
-    }
+    private static PlatformNotSupportedException NotWindows() => new PlatformNotSupportedException("ServiceAccess работает только в Windows.");
 
     [SupportedOSPlatform("windows")]
     private static ServiceState ReadCore(string name)
@@ -43,6 +40,7 @@ public sealed class ServiceAccess : IServiceAccess
         if (key is null) return new ServiceState(false);
         var raw = key.GetValue("Start");
         if (raw is not int v) return new ServiceState(true, StartType.Unknown);
+        if (v == 2 && key.GetValue("DelayedAutostart") is int d && d == 1) return new ServiceState(true, StartType.AutomaticDelayed);
         return new ServiceState(true, v switch
         {
             0 => StartType.Boot,
