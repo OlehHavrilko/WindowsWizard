@@ -64,7 +64,7 @@ public sealed class TweakEngine : ITweakEngine
         : Satisfies(Tasks.Read(a.Task!.Path), a.Task);
 
     private BaselineEntry Capture(string tweakId, TweakAction a) =>
-        a.Registry != null ? new BaselineEntry(tweakId, a.Id, _env.Registry.Read(a.Registry.Path, a.Registry.Name), null)
+        a.Registry != null ? new BaselineEntry(tweakId, a.Id, _env.Registry.Read(a.Registry.Path, a.Registry.Name), null, null, _env.Registry.KeyExists(a.Registry.Path))
         : a.Service != null ? new BaselineEntry(tweakId, a.Id, null, _env.Services.Read(a.Service.Name))
         : new BaselineEntry(tweakId, a.Id, null, null, Tasks.Read(a.Task!.Path));
 
@@ -175,7 +175,14 @@ public sealed class TweakEngine : ITweakEngine
     private void Write(TweakAction a)
     {
         if (a.Registry != null) _env.Registry.Write(a.Registry.Path, a.Registry.Name, ExpectedReg(a.Registry));
-        else if (a.Service != null) _env.Services.SetStartType(a.Service.Name, a.Service.Start);
+        else if (a.Service != null)
+        {
+            var wasRunning = _env.Services.Read(a.Service.Name).Running;
+            _env.Services.SetStartType(a.Service.Name, a.Service.Start);
+            // Отключённая служба продолжала бы работать до перезагрузки: останавливаем (best-effort, результат apply не зависит от остановки).
+            if (a.Service.Start == StartType.Disabled && wasRunning)
+                try { _env.Services.StopService(a.Service.Name); } catch (Exception) { /* служба остановится при перезагрузке */ }
+        }
         else Tasks.SetEnabled(a.Task!.Path, a.Task.Enabled);
     }
 
@@ -234,7 +241,11 @@ public sealed class TweakEngine : ITweakEngine
                 var be = PickBaseline(baselines, t.Id, a);
                 if (be == null)
                 {
-                    entries.Add(new ReportEntry(t.Id, a.Id, ActionStatus.Failed, "", "", expected, "В baseline нет записи для цели (неполный снимок), без записи"));
+                    // apply снимает baseline ВСЕХ своих целей до первой записи, поэтому цель без записи движок не менял
+                    // (карточка proposed, добавленная в каталог позже и т. п.): откатывать нечего.
+                    var curNone = CurrentStr(a);
+                    var nr = new ReportEntry(t.Id, a.Id, ActionStatus.NothingToRevert, curNone, curNone, "", "В baseline нет записи: движок эту цель не менял");
+                    entries.Add(nr); TryJournal(nr);
                     continue;
                 }
                 string baseStr = a.Registry != null ? Fmt(be.Registry!) : a.Service != null ? Fmt(be.Service!) : Fmt(be.Task!);
@@ -259,8 +270,18 @@ public sealed class TweakEngine : ITweakEngine
                     }
                     else
                     {
-                        if (a.Registry != null) _env.Registry.Write(a.Registry.Path, a.Registry.Name, be.Registry!);
-                        else if (a.Service != null) _env.Services.SetStartType(a.Service.Name, be.Service!.Start);
+                        if (a.Registry != null)
+                        {
+                            _env.Registry.Write(a.Registry.Path, a.Registry.Name, be.Registry!);
+                            if (!be.Registry!.Exists && be.KeyExisted == false) _env.Registry.DeleteKeyIfEmpty(a.Registry.Path);   // ключ создал apply
+                        }
+                        else if (a.Service != null)
+                        {
+                            _env.Services.SetStartType(a.Service.Name, be.Service!.Start);
+                            // до apply служба работала, а apply её остановил: запускаем обратно (best-effort)
+                            if (be.Service.Running && be.Service.Start != StartType.Disabled && !_env.Services.Read(a.Service.Name).Running)
+                                try { _env.Services.StartService(a.Service.Name); } catch (Exception) { /* запустится при перезагрузке (тип запуска восстановлен) */ }
+                        }
                         else Tasks.SetEnabled(a.Task!.Path, be.Task!.Enabled);
                         var after = CurrentStr(a);
                         bool ok = IsBaseNow();

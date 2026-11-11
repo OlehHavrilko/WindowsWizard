@@ -17,17 +17,23 @@ public interface IRegistryAccess
 {
     RegValue Read(string path, string name);                 // path: "HKLM\SOFTWARE\..."
     void Write(string path, string name, RegValue value);    // Exists=false => удалить значение
+    bool KeyExists(string path);
+    /// <summary>Удаляет ключ, только если в нём нет ни значений, ни подключей (откат ключей, созданных apply).</summary>
+    void DeleteKeyIfEmpty(string path);
 }
 
 /// <summary>Доступ к службам Windows.</summary>
 /// <summary>Тип запуска. AutomaticDelayed = Start=2 и DelayedAutostart=1 (иначе откат терял бы «отложенный запуск»).
 /// Новые значения добавляются только в конец: baseline хранит enum строкой, порядок не важен, но имена — да.</summary>
 public enum StartType { Boot, System, Automatic, Manual, Disabled, Unknown, AutomaticDelayed }
-public sealed record ServiceState(bool Exists, StartType Start = StartType.Unknown);
+/// <param name="Running">Служба запущена в момент чтения; не участвует в сравнении «применено/не применено», нужна для остановки при apply и запуска при revert.</param>
+public sealed record ServiceState(bool Exists, StartType Start = StartType.Unknown, bool Running = false);
 public interface IServiceAccess
 {
     ServiceState Read(string name);
     void SetStartType(string name, StartType start);
+    void StopService(string name);
+    void StartService(string name);
 }
 
 /// <summary>Состояние задачи планировщика. Enabled значим только при Exists.</summary>
@@ -88,7 +94,8 @@ public sealed record PlanEntry(string TweakId, string ActionId, string Target, s
 public sealed record Plan(string FormatVersion, string RunId, DateTimeOffset CreatedAt, IReadOnlyList<PlanEntry> Entries);
 
 /// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service/Task заполнено.</summary>
-public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null);
+/// <param name="KeyExisted">Для реестра: существовал ли ключ до apply (если нет — revert удаляет его, когда он пуст).</param>
+public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null, bool? KeyExisted = null);
 /// <param name="IsRevertMarker">Снимок, записанный после успешного отката: состояние целей после revert. Граница истории —
 /// PickBaseline не заглядывает за него, поэтому уже откатанный apply не «воскресает» при следующем откате.</param>
 public sealed record Baseline(string FormatVersion, string BaselineId, DateTimeOffset CreatedAt, IReadOnlyList<BaselineEntry> Entries, bool IsRevertMarker = false);

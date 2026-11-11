@@ -153,4 +153,45 @@ public class AuditRegressionTests
         Assert.Equal(D(0), r.Reg.Read(K, "A"));   // чужое значение не затёрто старым baseline
         Assert.Equal(ActionStatus.NothingToRevert, rev.Entries.Single().Status);
     }
+
+    [Fact]
+    public void Revert_RemovesKeyCreatedByApply_KeepsPreexistingKey()
+    {
+        var r = new Rig();
+        r.Reg.Set(@"HKLM\SOFTWARE\Old", "X", D(1));          // ключ существовал
+        var tw = new[] { T("t", Dw("a", "A", 0, @"HKLM\SOFTWARE\New"), Dw("b", "B", 0, @"HKLM\SOFTWARE\Old")) };
+        r.Engine.Apply(tw);
+        var rev = r.NextRun("run2").Revert(tw);
+        Assert.True(rev.Ok);
+        Assert.Contains(@"HKLM\SOFTWARE\New", r.Reg.DeletedKeys);
+        Assert.DoesNotContain(@"HKLM\SOFTWARE\Old", r.Reg.DeletedKeys);
+        Assert.True(r.Reg.KeyExists(@"HKLM\SOFTWARE\Old"));
+    }
+
+    [Fact]
+    public void Apply_StopsRunningService_RevertStartsIt()
+    {
+        var r = new Rig();
+        r.Svc.States["svc"] = new ServiceState(true, StartType.Automatic, Running: true);
+        var tw = new[] { T("t", Svc_("s", "svc", StartType.Disabled)) };
+        r.Engine.Apply(tw);
+        Assert.False(r.Svc.States["svc"].Running);
+        var rev = r.NextRun("run2").Revert(tw);
+        Assert.True(rev.Ok);
+        Assert.Equal(StartType.Automatic, r.Svc.States["svc"].Start);
+        Assert.True(r.Svc.States["svc"].Running);
+    }
+
+    [Fact]
+    public void Revert_TargetNeverCaptured_IsNothingToRevert_NotFailed()
+    {
+        var r = new Rig();
+        r.Reg.SetDword(K, "A", 1);
+        r.Engine.Apply(new[] { T("t", Dw("a", "A", 0)) });
+        var other = T("proposed", Dw("z", "Z", 0));            // карточка, которой не было при apply
+        var rev = r.NextRun("run2").Revert(new[] { T("t", Dw("a", "A", 0)), other });
+        Assert.True(rev.Ok);
+        Assert.Equal(ActionStatus.NothingToRevert, rev.Entries.Single(e => e.ActionId == "z").Status);
+        Assert.Equal(ActionStatus.Reverted, rev.Entries.Single(e => e.ActionId == "a").Status);
+    }
 }
