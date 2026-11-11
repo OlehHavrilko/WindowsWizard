@@ -1,4 +1,6 @@
-# WindowsWizard — собственный AME Playbook для Windows 11 26H2 Pro
+# WizardOS — собственный AME Playbook для Windows 11 26H2 Pro
+
+Продукт называется WizardOS ([DECISIONS](docs/DECISIONS.md) D-025); репозиторий — WindowsWizard.
 
 **Статус:** документированный каркас; исполняемого кода, playbook-контента и результатов прогонов нет. Теоретическая ревизия — [REVIEW](docs/REVIEW.md); переход к реализации ограничен условиями [ROADMAP](docs/ROADMAP.md).
 **Цель:** один управляемый AME Playbook для чистой установки Windows 11 26H2 Pro x64 — без готовых сборок, без удаления защитных механизмов, с проверяемым результатом и рабочим откатом.
