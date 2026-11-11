@@ -194,4 +194,18 @@ public class AuditRegressionTests
         Assert.Equal(ActionStatus.NothingToRevert, rev.Entries.Single(e => e.ActionId == "z").Status);
         Assert.Equal(ActionStatus.Reverted, rev.Entries.Single(e => e.ActionId == "a").Status);
     }
+
+    [Fact]
+    public void Revert_KeyDeleteDenied_StillReverted_WithNote()
+    {
+        var r = new Rig();
+        var tw = new[] { T("t", Dw("a", "A", 0, @"HKLM\SOFTWARE\New")) };
+        r.Engine.Apply(tw);
+        r.Reg.FailDeleteKey = true;
+        var rev = r.NextRun("run2").Revert(tw);
+        var e = rev.Entries.Single();
+        Assert.Equal(ActionStatus.Reverted, e.Status);
+        Assert.Contains("не удалён", e.Error);
+        Assert.False(r.Reg.Read(@"HKLM\SOFTWARE\New", "A").Exists);
+    }
 }

@@ -47,17 +47,14 @@ public sealed class RegistryAccess : IRegistryAccess
         var (root, sub) = Split(path);
         using (root)
         {
-            var i = sub.LastIndexOf('\\');
-            if (i < 0) return;   // корень куста не трогаем
-            var parentSub = sub[..i];
-            var leaf = sub[(i + 1)..];
-            using var parent = root.OpenSubKey(parentSub, writable: true);
-            if (parent is null) return;
-            using (var key = parent.OpenSubKey(leaf, writable: false))
+            if (sub.IndexOf('\\') < 0 && sub.Length == 0) return;   // корень куста не трогаем
+            using (var key = root.OpenSubKey(sub, writable: false))
             {
                 if (key is null || key.ValueCount != 0 || key.SubKeyCount != 0) return;
             }
-            parent.DeleteSubKey(leaf, throwOnMissingSubKey: false);
+            // Удаляем от корня куста, а не через родителя, открытого на запись: родитель вроде Policies\Microsoft
+            // может не давать права на запись (на 26300 так для Dsh), хотя создание ключа от корня проходит.
+            root.DeleteSubKey(sub, throwOnMissingSubKey: false);
         }
     }
 

@@ -8,6 +8,7 @@ public sealed class FakeRegistry : IRegistryAccess
     public Dictionary<(string, string), RegValue> Values = new();
     public HashSet<string> Keys = new(StringComparer.OrdinalIgnoreCase);
     public List<string> DeletedKeys = new();
+    public bool FailDeleteKey;
     public List<string> Writes = new();
     /// <summary>Если вернёт true — запись падает исключением.</summary>
     public Func<string, string, RegValue, bool>? FailWhen;
@@ -31,6 +32,7 @@ public sealed class FakeRegistry : IRegistryAccess
 
     public void DeleteKeyIfEmpty(string path)
     {
+        if (FailDeleteKey) throw new UnauthorizedAccessException("injected key delete failure");
         if (Values.Keys.Any(k => k.Item1 == path.ToUpperInvariant())) return;
         if (Keys.Remove(path)) DeletedKeys.Add(path);
     }

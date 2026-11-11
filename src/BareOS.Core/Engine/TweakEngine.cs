@@ -256,6 +256,7 @@ public sealed class TweakEngine : ITweakEngine
                     : Same(Tasks.Read(a.Task!.Path), be.Task!);
                 bool isBase = IsBaseNow();
                 ReportEntry res;
+                string? keyNote = null;
                 if (isBase)
                     res = new ReportEntry(t.Id, a.Id, ActionStatus.NothingToRevert, cur, cur, baseStr);
                 else if (MatchesExpected(a))
@@ -273,7 +274,11 @@ public sealed class TweakEngine : ITweakEngine
                         if (a.Registry != null)
                         {
                             _env.Registry.Write(a.Registry.Path, a.Registry.Name, be.Registry!);
-                            if (!be.Registry!.Exists && be.KeyExisted == false) _env.Registry.DeleteKeyIfEmpty(a.Registry.Path);   // ключ создал apply
+                            if (!be.Registry!.Exists && be.KeyExisted == false)   // ключ создал apply
+                            {
+                                try { _env.Registry.DeleteKeyIfEmpty(a.Registry.Path); }
+                                catch (Exception ex) { keyNote = "Значение восстановлено, но пустой ключ не удалён: " + ex.Message; }
+                            }
                         }
                         else if (a.Service != null)
                         {
@@ -286,7 +291,7 @@ public sealed class TweakEngine : ITweakEngine
                         var after = CurrentStr(a);
                         bool ok = IsBaseNow();
                         res = ok
-                            ? new ReportEntry(t.Id, a.Id, ActionStatus.Reverted, cur, after, baseStr)
+                            ? new ReportEntry(t.Id, a.Id, ActionStatus.Reverted, cur, after, baseStr, keyNote)
                             : new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, after, baseStr, "После восстановления значение не совпало с baseline");
                     }
                 }
