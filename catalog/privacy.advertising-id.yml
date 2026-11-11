@@ -7,7 +7,7 @@ scope: machine
 risk: T1
 status: accepted
 intent: "Запретить приложениям использовать рекламный идентификатор для персонализированной рекламы."
-evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\AdvertisingInfo: DisabledByGroupPolicy = 1; значение HKCU\\...\\AdvertisingInfo\\Enabled = 0 после входа."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\AdvertisingInfo: DisabledByGroupPolicy = 1; переключатель рекламного ID в «Параметрах» недоступен (управляется организацией)."
 reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
 actions:
   - id: disabled-by-group-policy

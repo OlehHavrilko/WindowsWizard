@@ -5,10 +5,11 @@ stability: Stable
 category: privacy
 scope: machine
 risk: T1
-status: accepted
+status: proposed
 intent: "Запретить использовать диагностические данные для персонализированных рекомендаций и рекламы."
 evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent: DisableTailoredExperiencesWithDiagnosticData = 1; параметр «Персонализированные возможности» недоступен для изменения."
 reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+breaks: "Аудит 2026-11-11: политика только пользовательская (CSP Experience/AllowTailoredExperiencesWithDiagnosticData), запись в HKLM игнорируется. Нужен scope user: HKCU\\Software\\Policies\\Microsoft\\Windows\\CloudContent."
 actions:
   - id: disable-tailored-experiences
     registry:

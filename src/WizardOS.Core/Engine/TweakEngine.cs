@@ -68,6 +68,31 @@ public sealed class TweakEngine : ITweakEngine
         : a.Service != null ? new BaselineEntry(tweakId, a.Id, null, _env.Services.Read(a.Service.Name))
         : new BaselineEntry(tweakId, a.Id, null, null, Tasks.Read(a.Task!.Path));
 
+    private static bool HasState(BaselineEntry e, TweakAction a)
+        => a.Registry != null ? e.Registry != null : a.Service != null ? e.Service != null : e.Task != null;
+
+    private static bool CapturedExpected(BaselineEntry e, TweakAction a)
+        => a.Registry != null ? Same(e.Registry!, ExpectedReg(a.Registry))
+         : a.Service != null ? Same(e.Service!, ExpectedSvc(a.Service))
+         : Satisfies(e.Task!, a.Task!);
+
+    /// <summary>Снимок цели для отката: самый новый, в котором цель ещё НЕ была в ожидаемом состоянии
+    /// (т. е. сделанный перед тем, как движок её изменил). Если во всех снимках цель уже была ожидаемой —
+    /// самый новый (откатывать нечего). Повторный apply и apply по частям (--only) так не теряют исходное.</summary>
+    private static BaselineEntry? PickBaseline(IReadOnlyList<Baseline> oldestFirst, string tweakId, TweakAction a)
+    {
+        BaselineEntry? newest = null;
+        for (int i = oldestFirst.Count - 1; i >= 0; i--)
+        {
+            var e = oldestFirst[i].Entries.FirstOrDefault(x => x.TweakId == tweakId && x.ActionId == a.Id);
+            if (e == null || !HasState(e, a)) continue;
+            if (oldestFirst[i].IsRevertMarker) return newest ?? e;   // граница: до неё всё уже откатано
+            newest ??= e;
+            if (!CapturedExpected(e, a)) return e;
+        }
+        return newest;
+    }
+
     private Report MakeReport(string cmd, List<ReportEntry> entries) => new(FormatVersion, _runId, cmd, _env.Now(), entries);
 
     private void Journal(ReportEntry e) => _store.SaveJournalLine(_runId, e);
@@ -95,7 +120,7 @@ public sealed class TweakEngine : ITweakEngine
         // Preflight + baseline всех целей до первой записи.
         try
         {
-            _store.LoadLatestBaseline(); // хранилище читается
+            _store.LoadBaselines(); // хранилище читается (битый baseline = стоп до записи)
             var be = new List<BaselineEntry>();
             foreach (var (t, a) in actions)
                 be.Add(Capture(t.Id, a));
@@ -188,12 +213,12 @@ public sealed class TweakEngine : ITweakEngine
     public Report Revert(IReadOnlyList<Tweak> tweaks)
     {
         var entries = new List<ReportEntry>();
-        Baseline? baseline = null;
+        IReadOnlyList<Baseline> baselines = Array.Empty<Baseline>();
         string? loadErr = null;
-        try { baseline = _store.LoadLatestBaseline(); } catch (Exception ex) { loadErr = ex.Message; }
+        try { baselines = _store.LoadBaselines(); } catch (Exception ex) { loadErr = ex.Message; }
         var actions = tweaks.SelectMany(t => t.Actions.Select(a => (t, a))).Reverse().ToList();
 
-        if (baseline == null)
+        if (baselines.Count == 0)
         {
             entries.Add(new ReportEntry("", "baseline", ActionStatus.Failed, "", "", "", loadErr ?? "Baseline не найден, откат без записи"));
             foreach (var (t, a) in actions)
@@ -206,8 +231,8 @@ public sealed class TweakEngine : ITweakEngine
             string expected = ExpectedStr(a), cur = "";
             try
             {
-                var be = baseline.Entries.FirstOrDefault(e => e.TweakId == t.Id && e.ActionId == a.Id);
-                if (be == null || (a.Registry != null ? be.Registry == null : a.Service != null ? be.Service == null : be.Task == null))
+                var be = PickBaseline(baselines, t.Id, a);
+                if (be == null)
                 {
                     entries.Add(new ReportEntry(t.Id, a.Id, ActionStatus.Failed, "", "", expected, "В baseline нет записи для цели (неполный снимок), без записи"));
                     continue;
@@ -224,7 +249,7 @@ public sealed class TweakEngine : ITweakEngine
                     res = new ReportEntry(t.Id, a.Id, ActionStatus.NothingToRevert, cur, cur, baseStr);
                 else if (MatchesExpected(a))
                 {
-                    if (a.Service != null && (!be.Service!.Exists || be.Service.Start == StartType.Unknown))
+                    if (a.Service != null && (!be.Service!.Exists || be.Service.Start is StartType.Unknown))
                     {
                         res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, cur, baseStr, "Baseline службы неполон, восстановление невозможно");
                     }
@@ -256,6 +281,23 @@ public sealed class TweakEngine : ITweakEngine
                 entries.Add(res); TryJournal(res);
             }
         }
+        SaveRevertMarker(tweaks, entries);
         return Finish("revert", entries);
+    }
+
+    /// <summary>После отката фиксируем состояние откатанных целей маркером-снимком (см. Baseline.IsRevertMarker).</summary>
+    private void SaveRevertMarker(IReadOnlyList<Tweak> tweaks, List<ReportEntry> entries)
+    {
+        try
+        {
+            var done = entries.Where(e => e.Status == ActionStatus.Reverted).Select(e => (e.TweakId, e.ActionId)).ToHashSet();
+            if (done.Count == 0) return;
+            var be = new List<BaselineEntry>();
+            foreach (var t in tweaks)
+                foreach (var a in t.Actions)
+                    if (done.Contains((t.Id, a.Id))) be.Add(Capture(t.Id, a));
+            _store.SaveBaseline(new Baseline(FormatVersion, _runId + "-revert", _env.Now(), be, IsRevertMarker: true));
+        }
+        catch { /* маркер вспомогательный: сбой не должен ломать отчёт об откате */ }
     }
 }

@@ -160,6 +160,18 @@ public static class TweakCatalog
             if (!seen.Add(t.Id)) throw new TweakValidationException($"Повторяющийся Id твика: '{t.Id}'");
     }
 
+    /// <summary>Данные должны совпадать с тем, как их прочитает RegistryAccess, иначе verify никогда не сойдётся,
+    /// а ошибка парсинга вылезет посреди apply.</summary>
+    private static bool IsCanonicalData(RegKind kind, string data) => kind switch
+    {
+        RegKind.DWord => uint.TryParse(data, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var u)
+                         && u.ToString(System.Globalization.CultureInfo.InvariantCulture) == data,
+        RegKind.QWord => ulong.TryParse(data, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var q)
+                         && q.ToString(System.Globalization.CultureInfo.InvariantCulture) == data,
+        RegKind.Binary => data.Length % 2 == 0 && data.All(Uri.IsHexDigit),
+        _ => true
+    };
+
     public static void Validate(Tweak t, string source = "")
     {
         string P(string m) => $"{(source == "" ? "" : source + ": ")}твик '{t.Id}': {m}";
@@ -189,6 +201,8 @@ public static class TweakCatalog
                 if (!(r.Path.StartsWith("HKLM\\", StringComparison.OrdinalIgnoreCase) || r.Path.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase)))
                     throw new TweakValidationException(P($"действие '{a.Id}': путь должен начинаться с HKLM\\ или HKCU\\: '{r.Path}'"));
                 if (r.Name == null || r.Data == null) throw new TweakValidationException(P($"действие '{a.Id}': Name/Data обязательны"));
+                if (!IsCanonicalData(r.Kind, r.Data))
+                    throw new TweakValidationException(P($"действие '{a.Id}': значение '{r.Data}' не в каноническом виде для {r.Kind} (DWord/QWord — десятичное число без знака и ведущих нулей, Binary — hex)"));
                 var svcIdx = r.Path.IndexOf("\\Services\\", StringComparison.OrdinalIgnoreCase);
                 if (svcIdx >= 0)
                 {

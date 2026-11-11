@@ -1,21 +1,16 @@
 id: search.web-suggestions
-title: "Веб-поиск и динамическое содержимое в поиске выключены"
+title: "«Основные моменты поиска» (динамическое содержимое) выключены"
 verdict: Standard
 stability: Stable
 category: convenience
 scope: machine
 risk: T1
 status: accepted
-intent: "Убрать Bing-подсказки из поиска меню «Пуск» и динамические «Основные моменты поиска»."
-evidence: "Политики HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer: DisableSearchBoxSuggestions = 1 и HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search: EnableDynamicContentInWSB = 0; запрос в поиске не создаёт обращений к bing.com (замер сетевых соединений SearchHost)."
+intent: "Убрать из поиска меню «Пуск» динамические «Основные моменты поиска» (контент Bing)."
+evidence: "Политика HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search: EnableDynamicContentInWSB = 0; в панели поиска нет блока «Основные моменты», SearchHost не загружает его контент (замер сетевых соединений)."
 reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+breaks: "Аудит 2026-11-11: действие DisableSearchBoxSuggestions убрано — политика только пользовательская, в HKLM не действует; вернётся с scope user."
 actions:
-  - id: disable-search-box-suggestions
-    registry:
-      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer'
-      name: DisableSearchBoxSuggestions
-      kind: DWord
-      data: "1"
   - id: disable-dynamic-content
     registry:
       path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search'

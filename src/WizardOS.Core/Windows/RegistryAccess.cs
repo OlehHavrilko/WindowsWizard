@@ -10,21 +10,17 @@ public sealed class RegistryAccess : IRegistryAccess
 {
     public RegValue Read(string path, string name)
     {
-        EnsureWindows();
+        if (!OperatingSystem.IsWindows()) throw NotWindows();
         return ReadCore(path, name);
     }
 
     public void Write(string path, string name, RegValue value)
     {
-        EnsureWindows();
+        if (!OperatingSystem.IsWindows()) throw NotWindows();
         WriteCore(path, name, value);
     }
 
-    private static void EnsureWindows()
-    {
-        if (!OperatingSystem.IsWindows())
-            throw new PlatformNotSupportedException("RegistryAccess работает только в Windows.");
-    }
+    private static PlatformNotSupportedException NotWindows() => new PlatformNotSupportedException("RegistryAccess работает только в Windows.");
 
     [SupportedOSPlatform("windows")]
     private static (RegistryKey Root, string Sub) Split(string path)

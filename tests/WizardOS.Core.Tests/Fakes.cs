@@ -67,10 +67,11 @@ public sealed class MemStore : IRunStore
     public List<ReportEntry> Journal = new();
     public void SaveBaseline(Baseline b)
     {
-        if (Baselines.Count > 0) throw new InvalidOperationException("baseline exists");
+        if (Baselines.Any(x => x.BaselineId == b.BaselineId)) throw new InvalidOperationException("baseline exists");
         Baselines.Add(b);
     }
     public Baseline? LoadLatestBaseline() => Baselines.LastOrDefault();
+    public IReadOnlyList<Baseline> LoadBaselines() => Baselines.ToList();
     public void SaveReport(Report r) => Reports.Add(r);
     public void SaveJournalLine(string runId, ReportEntry e) => Journal.Add(e);
 }
@@ -84,10 +85,23 @@ public sealed class Rig
     public ITweakEngine Engine;
     public const string K = @"HKLM\SOFTWARE\Test";
 
+    private DateTimeOffset _now = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private readonly IRunStore _store;
+
     public Rig(IRunStore? store = null)
     {
-        var env = new EngineEnv(Reg, Svc, () => new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Tasks);
-        Engine = new TweakEngine(env, store ?? Store, "run1");
+        _store = store ?? Store;
+        Engine = Make("run1");
+    }
+
+    private ITweakEngine Make(string runId)
+        => new TweakEngine(new EngineEnv(Reg, Svc, () => _now, Tasks), _store, runId);
+
+    /// <summary>Новый прогон (новый процесс wizardos) на том же хранилище и той же «системе», на минуту позже.</summary>
+    public ITweakEngine NextRun(string runId)
+    {
+        _now = _now.AddMinutes(1);
+        return Make(runId);
     }
 
     public static Tweak T(string id, params TweakAction[] a) =>

@@ -13,11 +13,11 @@ public static class Program
         Использование: wizardos <plan|apply|verify|revert|report|validate> [опции]
           --catalog <dir>   каталог карточек (по умолчанию ./catalog)
           --data <dir>      каталог прогонов (по умолчанию %ProgramData%\WizardOS\runs)
-          --only <id,id>    выполнить только перечисленные твики
+          --only <id,id>    выполнить только перечисленные твики (в т. ч. proposed; без --only берутся accepted/verified)
           --run <id|latest> (report) прогон для отчёта, по умолчанию latest
           --json            вывод в JSON
         validate — проверить каталог карточек и выйти (CI).
-        Код выхода: 0 — всё в порядке, 1 — есть проблемы, 2 — ошибка использования/валидации.
+        Код выхода: 0 — всё в порядке, 1 — есть проблемы, 2 — ошибка использования, валидации или среды (нет прав, замок занят).
         """;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -35,6 +35,7 @@ public static class Program
         catch (PlatformNotSupportedException e) { return Fail(e.Message); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
         { return Fail($"Ошибка: {e.Message}"); }
+        catch (Exception e) { return Fail($"Внутренняя ошибка: {e}"); }
     }
 
     private static int Fail(string msg)
@@ -52,7 +53,7 @@ public static class Program
         }
 
         var command = args[0].ToLowerInvariant();
-        if (command is not ("plan" or "apply" or "verify" or "revert" or "validate"))
+        if (command is not ("plan" or "apply" or "verify" or "revert" or "report" or "validate"))
             return Fail($"Неизвестная команда: {args[0]}\n{Usage}");
 
         string tweaksDir = "catalog";
@@ -100,6 +101,13 @@ public static class Program
             if (unknown.Count > 0) return Fail($"Неизвестные id твиков: {string.Join(", ", unknown)}");
             tweaks = tweaks.Where(t => only.Contains(t.Id)).ToList();
         }
+        else if (command != "revert")   // revert откатывает всё, что есть в каталоге (в т. ч. карточки, ставшие proposed/rejected)
+        {
+            // По умолчанию применяются только принятые карточки; proposed/rejected — только явно через --only.
+            var excluded = tweaks.Where(t => !IsActive(t)).Select(t => $"{t.Id} ({t.Status})").ToList();
+            if (excluded.Count > 0) Console.Error.WriteLine($"Пропущены карточки со статусом proposed/rejected: {string.Join(", ", excluded)}");
+            tweaks = tweaks.Where(IsActive).ToList();
+        }
         if (tweaks.Count == 0) return Fail("Нет твиков для выполнения.");
 
         if (command is "apply" or "revert" && !IsAdministrator())
@@ -107,6 +115,7 @@ public static class Program
 
         if (command is "apply" or "revert")
         {
+            new JsonRunStore(dataDir).SecureRoot();
             if (!RunLock.TryAcquire(dataDir, out var lk, out var holder))
                 return Fail($"Другой прогон уже выполняется (замок {Path.Combine(dataDir, RunLock.FileName)}: {holder}).");
             using (lk) return Execute(command, tweaks, dataDir, json);
@@ -117,9 +126,12 @@ public static class Program
     private static int Execute(string command, IReadOnlyList<Tweak> tweaks, string dataDir, bool json)
     {
         var env = new EngineEnv(new RegistryAccess(), new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess());
-        var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
-        var store = new JsonRunStore(dataDir);
-        ITweakEngine engine = new TweakEngine(env, store, runId);
+        // миллисекунды + суффикс: два прогона в одну секунду не должны делить каталог (baseline не перезаписывается → preflight падал бы)
+        var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..4];
+        var jsonStore = new JsonRunStore(dataDir);
+        // Не-админ не пишет в корень прогонов: каталог, созданный обычным пользователем, подменил бы доверенное хранилище baseline.
+        IRunStore store = command is "apply" or "revert" || IsAdministrator() ? jsonStore : new NullRunStore(jsonStore);
+        var engine = new TweakEngine(env, store, runId);
 
         if (command == "plan")
         {
@@ -139,6 +151,8 @@ public static class Program
         else PrintReport(report);
         return report.Ok ? 0 : 1;
     }
+
+    private static bool IsActive(Tweak t) => t.Status is null || t.Status is "accepted" or "verified";
 
     private static bool TryNext(string[] args, ref int i, out string value)
     {

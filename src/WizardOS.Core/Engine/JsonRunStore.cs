@@ -48,18 +48,41 @@ public sealed class JsonRunStore : IRunStore
         }
     }
 
-    public Baseline? LoadLatestBaseline()
+    public Baseline? LoadLatestBaseline() => LoadBaselines().LastOrDefault();
+
+    private readonly List<string> _corrupt = new();
+    /// <summary>Повреждённые baseline.json, пропущенные при чтении; CLI показывает их предупреждением.
+    /// Цели, для которых снимка не нашлось, откат отметит Failed (без записи).</summary>
+    public IReadOnlyList<string> CorruptFiles => _corrupt;
+
+    /// <summary>Все baseline по возрастанию CreatedAt.</summary>
+    public IReadOnlyList<Baseline> LoadBaselines()
     {
-        if (!Directory.Exists(_root)) return null;
-        Baseline? best = null;
+        if (!Directory.Exists(_root)) return Array.Empty<Baseline>();
+        var list = new List<Baseline>();
         foreach (var d in Directory.EnumerateDirectories(_root))
         {
             var f = Path.Combine(d, "baseline.json");
             if (!File.Exists(f)) continue;
-            var b = JsonSerializer.Deserialize<Baseline>(File.ReadAllText(f), EngineJson.Options);
-            if (b != null && (best == null || b.CreatedAt > best.CreatedAt)) best = b;
+            Baseline? b = null;
+            try { b = JsonSerializer.Deserialize<Baseline>(File.ReadAllText(f), EngineJson.Options); }
+            catch (JsonException) { }
+            if (b?.Entries == null) { _corrupt.Add(f); continue; }   // один битый старый файл не должен блокировать всё остальное
+            list.Add(b);
         }
-        return best;
+        return list.OrderBy(b => b.CreatedAt).ToList();
+    }
+
+    /// <summary>Создаёт корень хранилища и (на Windows) закрывает его ACL: только Администраторы и SYSTEM.
+    /// Иначе обычный пользователь может подложить baseline.json в %ProgramData%, и revert от администратора запишет его значения.
+    /// Вызывается перед apply/revert (они и так требуют прав администратора).</summary>
+    public void SecureRoot()
+    {
+        var existed = Directory.Exists(_root);
+        Directory.CreateDirectory(_root);
+        // Чужой каталог (--data на папку с файлами) не трогаем: ACL ставим только на новый или пустой корень.
+        if (OperatingSystem.IsWindows() && (!existed || !Directory.EnumerateFileSystemEntries(_root).Any(e => Path.GetFileName(e) != RunLock.FileName)))
+            RestrictAcl(_root);
     }
 
     public void SaveReport(Report report)
@@ -99,6 +122,7 @@ public sealed class JsonRunStore : IRunStore
     {
         var info = new DirectoryInfo(dir);
         var sec = new DirectorySecurity();
+        sec.SetOwner(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null));   // владелец не может вернуть себе доступ через WRITE_DAC
         sec.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
         foreach (var sid in new[] { WellKnownSidType.BuiltinAdministratorsSid, WellKnownSidType.LocalSystemSid })
             sec.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(sid, null), FileSystemRights.FullControl,

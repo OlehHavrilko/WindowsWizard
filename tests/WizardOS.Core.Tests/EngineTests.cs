@@ -38,6 +38,7 @@ public class EngineTests
         public FakeRegistry? Reg; public int? WritesAtBaselineTime; Baseline? b;
         public void SaveBaseline(Baseline x) { WritesAtBaselineTime = Reg!.Writes.Count; b = x; }
         public Baseline? LoadLatestBaseline() => b;
+        public IReadOnlyList<Baseline> LoadBaselines() => b == null ? Array.Empty<Baseline>() : new[] { b };
         public void SaveReport(Report r) { }
         public void SaveJournalLine(string runId, ReportEntry e) { }
     }
