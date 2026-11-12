@@ -1,0 +1,37 @@
+id: privacy.input-handwriting
+title: "Сбор рукописного и печатного ввода выключен"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Запретить отправку образцов рукописного ввода и отчётов об их ошибках, неявный сбор набранного текста и чернил для персонализации."
+evidence: "Политики TabletPC PreventHandwritingDataSharing = 1, HandwritingErrorReports PreventHandwritingErrorReports = 1, InputPersonalization RestrictImplicitTextCollection = 1 и RestrictImplicitInkCollection = 1 (verify)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Персонализация подсказок ввода по вашему почерку и набору недоступна."
+actions:
+  - id: hw-share
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\TabletPC'
+      name: PreventHandwritingDataSharing
+      kind: DWord
+      data: "1"
+  - id: hw-errors
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\HandwritingErrorReports'
+      name: PreventHandwritingErrorReports
+      kind: DWord
+      data: "1"
+  - id: implicit-text
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization'
+      name: RestrictImplicitTextCollection
+      kind: DWord
+      data: "1"
+  - id: implicit-ink
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization'
+      name: RestrictImplicitInkCollection
+      kind: DWord
+      data: "1"

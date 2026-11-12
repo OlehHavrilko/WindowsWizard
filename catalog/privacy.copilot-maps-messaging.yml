@@ -1,0 +1,36 @@
+id: privacy.copilot-maps-messaging
+title: "Политика Copilot, карты и синхронизация сообщений выключены"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "TurnOffWindowsCopilot = 1 (политика Copilot), автозагрузка данных карт и фоновый трафик страницы Карт выключены, синхронизация SMS в облако запрещена."
+evidence: "Политики WindowsCopilot TurnOffWindowsCopilot = 1, Maps AutoDownloadAndUpdateMapData = 0 и AllowUntriggeredNetworkTrafficOnSettingsPage = 0, Messaging AllowMessageSync = 0 (verify)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: copilot-policy
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot'
+      name: TurnOffWindowsCopilot
+      kind: DWord
+      data: "1"
+  - id: maps-download
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Maps'
+      name: AutoDownloadAndUpdateMapData
+      kind: DWord
+      data: "0"
+  - id: maps-traffic
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Maps'
+      name: AllowUntriggeredNetworkTrafficOnSettingsPage
+      kind: DWord
+      data: "0"
+  - id: message-sync
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Messaging'
+      name: AllowMessageSync
+      kind: DWord
+      data: "0"
