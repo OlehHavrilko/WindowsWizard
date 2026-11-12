@@ -1,0 +1,6 @@
+---
+title: Проверка результата
+description: bareos verify
+actions:
+  - !writeStatus: {status: 'Проверка результата'}
+  - !run: {exeDir: true, exe: 'bareos-run.cmd', args: 'verify'}
