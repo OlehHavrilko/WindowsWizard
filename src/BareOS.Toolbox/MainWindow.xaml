@@ -1,0 +1,161 @@
+<Window x:Class="BareOS.Toolbox.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Bare OS Toolbox" Width="980" Height="720" MinWidth="760" MinHeight="520"
+        Background="{StaticResource Graphite}" WindowStartupLocation="CenterScreen"
+        Icon="bareos.ico" FontFamily="{StaticResource UiFont}" Loaded="Window_Loaded">
+  <Grid Margin="28,20,28,16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <!-- Шапка: знак «b_» и вкладки -->
+    <Grid Grid.Row="0" Margin="0,0,0,14">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,36,0">
+        <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="30" FontWeight="SemiBold" Text="b" />
+        <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="30" FontWeight="SemiBold" Text="_" Foreground="{StaticResource Signal}" />
+        <TextBlock Text="Bare OS" FontSize="15" Foreground="{StaticResource Stone}" VerticalAlignment="Bottom" Margin="12,0,0,5" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+        <RadioButton x:Name="TabParams" Style="{StaticResource TabBtn}" Content="Параметры" IsChecked="True" Checked="Tab_Checked" />
+        <RadioButton x:Name="TabProof" Style="{StaticResource TabBtn}" Content="Proof Report" Checked="Tab_Checked" />
+        <RadioButton x:Name="TabLog" Style="{StaticResource TabBtn}" Content="Журнал" Checked="Tab_Checked" />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1">
+      <!-- ===== Параметры ===== -->
+      <Grid x:Name="PaneParams">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,12">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button x:Name="BtnRefresh" Style="{StaticResource Btn}" Content="Обновить" Click="Refresh_Click" />
+            <Button x:Name="BtnRevertAll" Style="{StaticResource Btn}" Content="Откатить всё" Click="RevertAll_Click" />
+            <Button x:Name="BtnApplyAll" Style="{StaticResource BtnPrimary}" Margin="0" Content="Применить рекомендованное" Click="ApplyAll_Click" />
+          </StackPanel>
+          <TextBox x:Name="Search" Width="240" HorizontalAlignment="Left" TextChanged="Search_Changed" ToolTip="Поиск по названию" />
+        </DockPanel>
+        <ListBox x:Name="List" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch"
+                 Focusable="False">
+          <ListBox.GroupStyle>
+            <GroupStyle>
+              <GroupStyle.HeaderTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Name}" Foreground="{StaticResource Stone}" FontSize="12" FontWeight="SemiBold"
+                             Margin="2,16,0,6" />
+                </DataTemplate>
+              </GroupStyle.HeaderTemplate>
+            </GroupStyle>
+          </ListBox.GroupStyle>
+          <ListBox.ItemContainerStyle>
+            <Style TargetType="ListBoxItem">
+              <Setter Property="Focusable" Value="False" />
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="ListBoxItem">
+                    <ContentPresenter />
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
+            </Style>
+          </ListBox.ItemContainerStyle>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border Background="{StaticResource Slate}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="4"
+                      Padding="16,12" Margin="0,0,0,6">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Intent}" Foreground="{StaticResource Stone}" TextWrapping="Wrap" Margin="0,4,0,0"
+                               ToolTip="{Binding Evidence}" />
+                    <TextBlock Text="{Binding Breaks}" Foreground="{StaticResource Ember}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding Meta}" Foreground="{StaticResource Stone}" FontFamily="{StaticResource MonoFont}" FontSize="11" Margin="0,6,0,0" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="16,0,0,0">
+                    <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding IsOn, Mode=OneWay}"
+                                  IsEnabled="{Binding CanToggle}" Click="Toggle_Click" HorizontalAlignment="Right" />
+                    <TextBlock Text="{Binding StateText}" Foreground="{Binding StateBrush}" FontSize="11"
+                               FontFamily="{StaticResource MonoFont}" HorizontalAlignment="Right" Margin="0,6,0,0" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+
+      <!-- ===== Proof Report ===== -->
+      <Grid x:Name="PaneProof" Visibility="Collapsed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+          <Button Style="{StaticResource Btn}" Content="Замер «до»" Click="MeasureBefore_Click" />
+          <Button Style="{StaticResource BtnPrimary}" Content="Замер «после» и сравнить" Click="MeasureAfter_Click" />
+          <Button Style="{StaticResource Btn}" Content="Открыть HTML-отчёт" Click="OpenHtml_Click" />
+        </StackPanel>
+        <TextBlock x:Name="ProofSummary" Grid.Row="1" Foreground="{StaticResource Stone}" TextWrapping="Wrap" Margin="0,0,0,10" />
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="ProofList">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Background="{StaticResource Slate}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="4" Padding="16,10" Margin="0,0,0,6">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="110" />
+                      <ColumnDefinition Width="110" />
+                      <ColumnDefinition Width="140" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding Before}" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource Stone}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding After}" FontFamily="{StaticResource MonoFont}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Text="{Binding Delta}" FontFamily="{StaticResource MonoFont}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                      <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                          <Setter Property="Foreground" Value="{StaticResource Stone}" />
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding Improved}" Value="True">
+                              <Setter Property="Foreground" Value="{StaticResource Signal}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Worse}" Value="True">
+                              <Setter Property="Foreground" Value="{StaticResource Hex}" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </TextBlock.Style>
+                    </TextBlock>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+
+      <!-- ===== Журнал ===== -->
+      <Grid x:Name="PaneLog" Visibility="Collapsed">
+        <TextBox x:Name="LogBox" IsReadOnly="True" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                 VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" AcceptsReturn="True" BorderThickness="1" />
+      </Grid>
+    </Grid>
+
+    <TextBlock x:Name="StatusText" Grid.Row="2" Foreground="{StaticResource Stone}" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="0,12,0,0" />
+  </Grid>
+</Window>

@@ -4,6 +4,14 @@
 
 ---
 
+## v0.2-dev — Toolbox (D-034)
+
+- `src/BareOS.Toolbox`: WPF-приложение поверх движка: карточки каталога с переключателями (apply/revert/verify), поиск, «Применить рекомендованное», «Откатить всё», Proof Report (замер до/после, HTML), журнал. Стиль Bare OS.
+- Плейбук: задача `01-toolbox.yml` и `install-toolbox.cmd/.ps1` ставят Toolbox в `%ProgramFiles%\Bare OS` с ярлыками в Пуске и на рабочем столе; `tools/package.py` принимает `--toolbox`.
+- CI собирает Toolbox и готовый `.apbx` (артефакт `bareos-playbook-apbx`).
+
+---
+
 ## v0.2-dev — Appx и видимая оптимизация (D-033)
 
 - Действие `appx` (удаление пакетов для всех пользователей и из provisioned), `AppxAccess` через Windows PowerShell, защищённый список (Store/Xbox/Defender/WSL/winget/среды выполнения).

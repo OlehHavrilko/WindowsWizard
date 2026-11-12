@@ -1,0 +1,6 @@
+---
+title: Установка Toolbox
+description: Bare OS Toolbox и ярлыки в Пуске и на рабочем столе
+actions:
+  - !writeStatus: {status: 'Установка Bare OS Toolbox'}
+  - !run: {exeDir: true, exe: 'install-toolbox.cmd'}
