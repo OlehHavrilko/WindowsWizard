@@ -1,0 +1,26 @@
+id: security.remote-assistance
+title: "Удалённый помощник Windows выключен"
+verdict: Standard
+stability: Stable
+category: security
+scope: machine
+risk: T1
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "fAllowToGetHelp = 0 и fAllowFullControl = 0: нельзя приглашать помощника и давать ему управление. Устаревший компонент, сокращает поверхность атаки и закрывает исключение брандмауэра."
+evidence: "Значения Control\\Remote Assistance fAllowToGetHelp = 0 и fAllowFullControl = 0 (verify); в «Свойствах системы» → «Удалённый доступ» снят флажок «Разрешить подключения удалённого помощника»."
+reversibility: "revert по baseline: значения возвращаются к исходным"
+breaks: "Не работает «Удалённый помощник» (msra.exe). «Быстрая помощь» и удалённый рабочий стол не затрагиваются."
+actions:
+  - id: get-help
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance'
+      name: fAllowToGetHelp
+      kind: DWord
+      data: "0"
+  - id: full-control
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance'
+      name: fAllowFullControl
+      kind: DWord
+      data: "0"

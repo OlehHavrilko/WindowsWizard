@@ -1,0 +1,19 @@
+id: perf.search-power-modes
+title: "Индексатор поиска учитывает режим питания"
+verdict: Standard
+stability: Stable
+category: performance
+scope: machine
+risk: T0
+status: accepted
+source: "Разбор AtlasOS и ReviOS (playbook), 2026-11-12"
+intent: "RespectPowerModes = 1 — то же, что «Учитывать параметры питания при индексировании» в Параметрах: в режиме экономии энергии и на батарее индексатор приостанавливается и не нагружает диск и CPU."
+evidence: "Значение Windows Search\\Gather\\Windows\\SystemIndex RespectPowerModes = 1 (verify); переключатель в Параметрах → Поиск в Windows включён."
+reversibility: "revert по baseline: значение возвращается к исходному"
+actions:
+  - id: respect-power-modes
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows Search\Gather\Windows\SystemIndex'
+      name: RespectPowerModes
+      kind: DWord
+      data: "1"

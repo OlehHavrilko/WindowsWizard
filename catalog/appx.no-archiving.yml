@@ -1,0 +1,19 @@
+id: appx.no-archiving
+title: "Редко используемые приложения не архивируются автоматически"
+verdict: Standard
+stability: Stable
+category: appx
+scope: machine
+risk: T0
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "AllowAutomaticAppArchiving = 0: Windows не удаляет файлы редко запускаемых приложений Store, чтобы потом скачивать их заново при запуске."
+evidence: "Политика Appx AllowAutomaticAppArchiving = 0 (verify); в Параметрах → Приложения → Дополнительные параметры «Архивировать приложения» выключено и неактивно."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+actions:
+  - id: no-archiving
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Appx'
+      name: AllowAutomaticAppArchiving
+      kind: DWord
+      data: "0"

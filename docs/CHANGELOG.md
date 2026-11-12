@@ -4,6 +4,14 @@
 
 ---
 
+## v0.2-dev — карточки из разбора AtlasOS и ReviOS
+
+- 17 карточек (подробно — `docs/SOURCES.md`): реклама и навязчивые экраны (`consumer.content-delivery`, `shell.nags-off`, `consumer.upsell-block`), приватность (`privacy.user-tracking`, `privacy.setting-sync`, `privacy.device-reporting`), без пробуждений и автоперезагрузки (`system.no-wake-reboot`), отзывчивость (`perf.shell-delays`, `perf.explorer-folder-type`, `perf.search-power-modes`, `input.mouse-accel-off`), безопасность (`security.remote-assistance`, `security.autorun-off`, `security.lan-hardening`, `shell.file-extensions`), `appx.no-archiving`, `task.sleep-study`.
+- `proposed` (ждут прогона на ВМ): `consumer.upsell-block`, `perf.explorer-folder-type`, `security.lan-hardening`, `input.mouse-accel-off`.
+- Пакеты удаления компонентов ReviOS (`packages-main`) не взяты: удаляют системные пакеты и Defender.
+
+---
+
 ## v0.2-dev — действия feature и cleanup (D-035)
 
 - Действие `feature` (необязательные компоненты Windows через DISM): `IFeatureAccess`/`FeatureAccess`, baseline и откат исходного состояния, отсутствующий компонент считается выполненным, код 3010 не ошибка. Загрузчик каталога запрещает Hyper-V, VirtualMachinePlatform, HypervisorPlatform, WSL, Containers и Windows-Defender.

@@ -1,0 +1,18 @@
+id: task.sleep-study
+title: "Задача диагностики энергопотребления (SleepStudy) отключена"
+verdict: Standard
+stability: Fragile
+category: task
+scope: machine
+risk: T1
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "Задача Power Efficiency Diagnostics\\AnalyzeSystem периодически анализирует энергопотребление системы и пишет отчёт; на десктопе не нужна."
+evidence: "Задача \\Microsoft\\Windows\\Power Efficiency Diagnostics\\AnalyzeSystem = Disabled (verify); отсутствующая задача считается выполненной."
+reversibility: "revert по baseline: задача возвращается в исходное состояние"
+breaks: "Нет отчёта powercfg /energy по расписанию; ручной запуск работает."
+actions:
+  - id: analyze-system
+    task:
+      path: '\Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem'
+      state: disabled

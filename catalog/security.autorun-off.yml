@@ -1,0 +1,26 @@
+id: security.autorun-off
+title: "Автозапуск со съёмных носителей выключен"
+verdict: Standard
+stability: Stable
+category: security
+scope: machine
+risk: T1
+status: accepted
+source: "Разбор AtlasOS и ReviOS (playbook), 2026-11-12"
+intent: "NoDriveTypeAutoRun = 255 и NoAutorun = 1: Windows не выполняет autorun.inf и не запускает действия автоматически для любых дисков. Защита от заражения через флешки и меньше всплывающих окон при подключении."
+evidence: "Политики Explorer NoDriveTypeAutoRun = 255 и NoAutorun = 1 (verify); при подключении флешки окно автозапуска не появляется."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Установочные диски и флешки нужно открывать вручную."
+actions:
+  - id: no-drive-autorun
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer'
+      name: NoDriveTypeAutoRun
+      kind: DWord
+      data: "255"
+  - id: no-autorun
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer'
+      name: NoAutorun
+      kind: DWord
+      data: "1"

@@ -1,0 +1,44 @@
+id: shell.nags-off
+title: "Без напоминаний «Завершите настройку», уведомлений аккаунта и рекомендаций в Пуске"
+verdict: Standard
+stability: Moderate
+category: convenience
+scope: user
+risk: T1
+status: accepted
+source: "Разбор AtlasOS и ReviOS (playbook), 2026-11-12"
+intent: "Убрать навязчивые экраны и значки: «Давайте завершим настройку устройства» (SCOOBE), уведомления аккаунта Microsoft в Пуске и Параметрах, рекомендации (Iris) в Пуске, всплывающую рекламу функций в области уведомлений."
+evidence: "Значения UserProfileEngagement ScoobeSystemSettingEnabled = 0, SystemSettings\\AccountNotifications EnableAccountNotifications = 0, Explorer\\Advanced Start_AccountNotifications = 0 и Start_IrisRecommendations = 0, политика NoBalloonFeatureAdvertisements = 1 (verify); после перезагрузки экран SCOOBE не появляется, в Пуске нет значка аккаунта с предупреждением."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+delay: relogon
+actions:
+  - id: scoobe
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement'
+      name: ScoobeSystemSettingEnabled
+      kind: DWord
+      data: "0"
+  - id: account-notifications
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\SystemSettings\AccountNotifications'
+      name: EnableAccountNotifications
+      kind: DWord
+      data: "0"
+  - id: start-account-notifications
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+      name: Start_AccountNotifications
+      kind: DWord
+      data: "0"
+  - id: start-iris
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+      name: Start_IrisRecommendations
+      kind: DWord
+      data: "0"
+  - id: balloon-ads
+    registry:
+      path: 'HKCU\Software\Policies\Microsoft\Windows\Explorer'
+      name: NoBalloonFeatureAdvertisements
+      kind: DWord
+      data: "1"

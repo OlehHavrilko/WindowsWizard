@@ -1,0 +1,33 @@
+id: input.mouse-accel-off
+title: "Ускорение указателя мыши выключено (1:1)"
+verdict: Option
+stability: Stable
+category: latency
+scope: user
+risk: T1
+status: proposed
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "MouseSpeed = 0, MouseThreshold1 = 0, MouseThreshold2 = 0 — то же, что снять флажок «Повышенная точность установки указателя»: перемещение курсора линейно зависит от движения мыши, что нужно для игр."
+evidence: "Значения Control Panel\\Mouse MouseSpeed = 0, MouseThreshold1 = 0, MouseThreshold2 = 0 (verify); после повторного входа флажок «Повышенная точность» снят. Статус proposed: на ВМ проверить, что значения подхватываются без SystemParametersInfo."
+reversibility: "revert по baseline: значения возвращаются к исходным (по умолчанию 1, 6, 10)"
+breaks: "На тачпаде и при низкой чувствительности мыши курсор может казаться медленным."
+delay: relogon
+actions:
+  - id: mouse-speed
+    registry:
+      path: 'HKCU\Control Panel\Mouse'
+      name: MouseSpeed
+      kind: String
+      data: "0"
+  - id: mouse-threshold1
+    registry:
+      path: 'HKCU\Control Panel\Mouse'
+      name: MouseThreshold1
+      kind: String
+      data: "0"
+  - id: mouse-threshold2
+    registry:
+      path: 'HKCU\Control Panel\Mouse'
+      name: MouseThreshold2
+      kind: String
+      data: "0"

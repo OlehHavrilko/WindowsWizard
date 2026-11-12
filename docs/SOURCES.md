@@ -23,6 +23,25 @@
 | [AME: Privacy+ Testing Methodology (PDF)](https://download.ameliorated.io/Privacy%2B%20Testing%20Methodology.pdf) | существование опубликованной методики тестов | содержание методики не изучалось |
 | Сторонние обзоры и форумы | оценки прироста FPS на уровне погрешности, сравнение уровней безопасности | не первичные источники; использовать только как наблюдение |
 
+## Разбор исходников AtlasOS, ReviOS и ReviOS packages (2026-11-12)
+
+Архивы `Atlas-main`, `playbook-main` (ReviOS) и `packages-main` (CBS-пакеты ReviOS) прочитаны как текст, код не запускался. Сравнение с каталогом по паре «путь + имя значения»: из ~1100 значений реестра у нас уже было 68, ещё часть закрыта другими ключами.
+
+Взято 17 карточек (поле `source` в каждой): `consumer.content-delivery`, `shell.nags-off`, `privacy.user-tracking`, `privacy.setting-sync`, `privacy.device-reporting`, `system.no-wake-reboot`, `perf.shell-delays`, `perf.search-power-modes`, `security.remote-assistance`, `security.autorun-off`, `shell.file-extensions`, `appx.no-archiving`, `task.sleep-study`; опции/proposed для ВМ: `perf.explorer-folder-type`, `security.lan-hardening`, `input.mouse-accel-off`, `consumer.upsell-block`.
+
+Не взято и почему:
+
+| Что | Причина |
+|---|---|
+| `packages-main`: удаление Defender, телеметрии, Xbox, AI, OneDrive, systemPackages через подмену CBS-компонентов | правила проекта: системные пакеты не удаляем, Defender не трогаем; отката нет |
+| Atlas: отключение VBS/Core Isolation, mitigations, Defender, UAC secure desktop | безопасность (D-022: только Lab, отдельным решением) |
+| Atlas: SvcHost split (`SvcHostSplitDisable` на каждой службе) | нужен скрипт по всем службам, декларативно не выразить; эффект (−50 процессов svchost) стоит отдельной карточки с новым действием |
+| Atlas: wevtutil-отключение журналов SleepStudy | нет действия для журналов событий; взята только задача |
+| ReviOS: службы NetBT, tcpipreg, dam, GpuEnergyDrv, Wecsvc, PcaSvc, WdiServiceHost | драйверы и диагностика: риск поломок сети/диагностики без измеримого выигрыша |
+| ReviOS: IFEO-приоритеты (lsass, sihost, fontdrvhost, SearchIndexer) | эффект не измерен, lsass с Idle-приоритетом — риск задержек входа |
+| ReviOS: классический просмотрщик фото, ассоциации, обои, Brave/Firefox, скрытие страниц Параметров, раскладка Пуска | вкусовое, не оптимизация; оформление у нас своё |
+| SMB throttling, визуальные эффекты, контекстные меню, Send To, звуки, специальные возможности | нет измеримого эффекта на десктопе или вкусовое |
+
 ## Маршрутизация AME
 
 В ISO Compatibility указано: при неуказанном `oobe` действие с `iso: true/only` пропускается на OOBE; `oobe: true` включает выполнение там явно. Значения `iso: only` и `oobe: only` исключают обычный live-прогон. Кэширование загрузок/ПО рассматривается отдельно. Нельзя выводить поведение всего дерева из одного свойства на родительском `!task`; это проверяется отдельным прогоном S-17.
