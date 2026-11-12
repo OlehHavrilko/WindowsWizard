@@ -1,0 +1,26 @@
+id: security.lan-hardening
+title: "Без LLMNR и автовхода после перезагрузки"
+verdict: Option
+stability: Stable
+category: security
+scope: machine
+risk: T2
+status: proposed
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "EnableMulticast = 0 выключает LLMNR — известный вектор кражи хэшей паролей (LLMNR poisoning) в чужих сетях. DisableAutomaticRestartSignOn = 1: Windows не сохраняет учётные данные, чтобы автоматически войти после перезагрузки обновлением."
+evidence: "Политики DNSClient EnableMulticast = 0 и Policies\\System DisableAutomaticRestartSignOn = 1 (verify); UDP 5355 не слушается (netstat -ano). Опция и proposed: AtlasOS сам не включает LLMNR-часть по умолчанию из-за домашних сетей — проверить на ВМ доступ к \\\\ИМЯ-ПК."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "В домашней сети без DNS может не находиться соседний ПК по имени (\\\\ИМЯ-ПК); после перезагрузки обновлением нужно войти вручную."
+actions:
+  - id: llmnr-off
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient'
+      name: EnableMulticast
+      kind: DWord
+      data: "0"
+  - id: no-arso
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
+      name: DisableAutomaticRestartSignOn
+      kind: DWord
+      data: "1"

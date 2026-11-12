@@ -1,0 +1,27 @@
+id: perf.shell-delays
+title: "Без задержек меню и автозапуска после входа"
+verdict: Standard
+stability: Stable
+category: latency
+scope: user
+risk: T1
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "MenuShowDelay = 0: подменю открываются сразу, без паузы 400 мс. StartupDelayInMSec = 0: Проводник не задерживает запуск программ автозагрузки после входа."
+evidence: "Значения Control Panel\\Desktop MenuShowDelay = 0 и Explorer\\Serialize StartupDelayInMSec = 0 (verify); время от входа до запуска последней программы автозагрузки меньше (Proof Report, замер до/после)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "При большом автозапуске на HDD первые секунды после входа могут быть тяжелее."
+delay: relogon
+actions:
+  - id: menu-delay
+    registry:
+      path: 'HKCU\Control Panel\Desktop'
+      name: MenuShowDelay
+      kind: String
+      data: "0"
+  - id: startup-delay
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize'
+      name: StartupDelayInMSec
+      kind: DWord
+      data: "0"

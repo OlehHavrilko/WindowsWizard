@@ -1,0 +1,38 @@
+id: consumer.upsell-block
+title: "Блокировка рекламных установщиков Bing и Microsoft 365"
+verdict: Option
+stability: Moderate
+category: privacy
+scope: machine
+risk: T2
+status: proposed
+source: "Разбор ReviOS (playbook), 2026-11-12"
+intent: "Через Image File Execution Options (Debugger = taskkill) не дать запуститься BingChatInstaller.exe и BGAUpsell.exe/BCILauncher.exe — они показывают всплывающую рекламу Bing и меняют поисковик в браузерах, — и FeatureLoader.exe (продвижение PC Manager)."
+evidence: "Значения IFEO\\<exe> Debugger = %windir%\\System32\\taskkill.exe для четырёх файлов (verify); процессы не появляются в журнале запуска (Proof Report, процессы). Статус proposed: ReviOS-приём, на ВМ проверить, что Defender не считает IFEO-перехват угрозой и что ничего системного не зависит от этих файлов."
+reversibility: "revert по baseline: значения удаляются"
+breaks: "Нельзя запустить эти установщики вручную, пока карточка применена."
+actions:
+  - id: bingchatinstaller
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\BingChatInstaller.exe'
+      name: Debugger
+      kind: String
+      data: '%windir%\System32\taskkill.exe'
+  - id: bgaupsell
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\BGAUpsell.exe'
+      name: Debugger
+      kind: String
+      data: '%windir%\System32\taskkill.exe'
+  - id: bcilauncher
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\BCILauncher.exe'
+      name: Debugger
+      kind: String
+      data: '%windir%\System32\taskkill.exe'
+  - id: featureloader
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\FeatureLoader.exe'
+      name: Debugger
+      kind: String
+      data: '%windir%\System32\taskkill.exe'

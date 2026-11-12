@@ -1,0 +1,38 @@
+id: privacy.setting-sync
+title: "Синхронизация параметров Windows с облаком выключена"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "Политики SettingSync: не синхронизировать тему, пароли, специальные возможности и прочие параметры Windows через учётную запись Microsoft («Резервное копирование Windows» → «Запомнить мои настройки»), запрет переопределения пользователем."
+evidence: "Политики SettingSync DisableSettingSync = 2, DisableSettingSyncUserOverride = 1, DisableWindowsSettingSync = 2, DisableSyncOnPaidNetwork = 1 (verify); переключатель «Запомнить мои настройки» в Параметрах неактивен."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Настройки не переносятся на другой ПК с той же учётной записью."
+actions:
+  - id: disable-sync
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync'
+      name: DisableSettingSync
+      kind: DWord
+      data: "2"
+  - id: no-user-override
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync'
+      name: DisableSettingSyncUserOverride
+      kind: DWord
+      data: "1"
+  - id: disable-windows-sync
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync'
+      name: DisableWindowsSettingSync
+      kind: DWord
+      data: "2"
+  - id: no-sync-metered
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync'
+      name: DisableSyncOnPaidNetwork
+      kind: DWord
+      data: "1"

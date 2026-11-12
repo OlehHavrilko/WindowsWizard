@@ -1,0 +1,32 @@
+id: system.no-wake-reboot
+title: "Обновления и обслуживание не будят ПК и не перезагружают его при входе пользователя"
+verdict: Standard
+stability: Stable
+category: convenience
+scope: machine
+risk: T1
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "AUPowerManagement = 0: Центр обновления не выводит ПК из сна для установки. NoAutoRebootWithLoggedOnUsers = 1: нет автоматической перезагрузки, пока пользователь в системе. Maintenance WakeUp = 0: автоматическое обслуживание не будит ПК (само обслуживание, TRIM и дефрагментация остаются)."
+evidence: "Политики WindowsUpdate\\AU AUPowerManagement = 0, NoAutoRebootWithLoggedOnUsers = 1, Task Scheduler\\Maintenance WakeUp = 0 (verify); в выводе powercfg /waketimers нет таймеров UpdateOrchestrator и обслуживания."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Обновления ставятся только при включённом ПК; перезагрузку после обновления делает пользователь."
+actions:
+  - id: wu-no-wake
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+      name: AUPowerManagement
+      kind: DWord
+      data: "0"
+  - id: wu-no-auto-reboot
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+      name: NoAutoRebootWithLoggedOnUsers
+      kind: DWord
+      data: "1"
+  - id: maintenance-no-wake
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Task Scheduler\Maintenance'
+      name: WakeUp
+      kind: DWord
+      data: "0"

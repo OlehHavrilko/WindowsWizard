@@ -1,0 +1,19 @@
+id: shell.file-extensions
+title: "Проводник показывает расширения файлов"
+verdict: Standard
+stability: Stable
+category: security
+scope: user
+risk: T0
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "HideFileExt = 0: видны расширения (.exe, .pdf.exe и т.п.). Удобство и защита от вложений с двойным расширением."
+evidence: "Значение Explorer\\Advanced HideFileExt = 0 (verify); в Проводнике имена файлов отображаются с расширениями."
+reversibility: "revert по baseline: значение возвращается к исходному"
+actions:
+  - id: hide-file-ext
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+      name: HideFileExt
+      kind: DWord
+      data: "0"

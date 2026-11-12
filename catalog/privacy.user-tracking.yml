@@ -1,0 +1,26 @@
+id: privacy.user-tracking
+title: "Без учёта запусков приложений и онлайн-распознавания речи"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: user
+risk: T1
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "Start_TrackProgs = 0: Windows не ведёт статистику запускаемых программ для Пуска и поиска. OnlineSpeechPrivacy HasAccepted = 0: голосовой ввод не отправляет речь в облако Microsoft."
+evidence: "Значения Explorer\\Advanced Start_TrackProgs = 0 и Speech_OneCore\\Settings\\OnlineSpeechPrivacy HasAccepted = 0 (verify); в Параметрах → Конфиденциальность выключены «Отслеживать запуски приложений» и «Распознавание речи в сети»."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Нет списка «Часто используемые» в Пуске; онлайн-диктовка (Win+H) потребует снова дать согласие."
+actions:
+  - id: track-progs
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+      name: Start_TrackProgs
+      kind: DWord
+      data: "0"
+  - id: online-speech
+    registry:
+      path: 'HKCU\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy'
+      name: HasAccepted
+      kind: DWord
+      data: "0"

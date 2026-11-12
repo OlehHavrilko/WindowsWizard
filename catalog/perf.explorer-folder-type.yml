@@ -1,0 +1,21 @@
+id: perf.explorer-folder-type
+title: "Проводник не определяет тип папки по содержимому"
+verdict: Option
+stability: Moderate
+category: latency
+scope: user
+risk: T1
+status: proposed
+source: "Разбор AtlasOS и ReviOS (playbook), 2026-11-12"
+intent: "FolderType = NotSpecified для всех папок: Проводник не сканирует содержимое, чтобы выбрать вид «Изображения»/«Музыка», и быстрее открывает большие папки (особенно Загрузки)."
+evidence: "Значение Shell\\Bags\\AllFolders\\Shell FolderType = NotSpecified (verify); время открытия папки с 5 000+ файлов меньше (замер на ВМ). Статус proposed: AtlasOS дополнительно удаляет кэш Bags, а мы его не трогаем — проверить на ВМ, что уже открытые папки тоже получают общий вид."
+reversibility: "revert по baseline: значение удаляется"
+breaks: "Нет автоматического вида «Изображения» с эскизами и колонками для фото и музыки; вид можно задать вручную."
+delay: relogon
+actions:
+  - id: folder-type
+    registry:
+      path: 'HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell'
+      name: FolderType
+      kind: String
+      data: "NotSpecified"

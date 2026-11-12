@@ -1,0 +1,32 @@
+id: privacy.device-reporting
+title: "Find My Device, отчёты MSRT и повторный экран приватности выключены"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+source: "Разбор AtlasOS (playbook), 2026-11-12"
+intent: "AllowFindMyDevice = 0: устройство не отправляет местоположение для «Поиска устройства». DontReportInfectionInformation = 1: средство удаления вредоносных программ (MSRT) не отправляет отчёт о результатах в Microsoft (сама проверка работает). DisablePrivacyExperience = 1: экран выбора параметров приватности не всплывает после крупных обновлений и не сбрасывает выбор."
+evidence: "Политики FindMyDevice AllowFindMyDevice = 0, MRT DontReportInfectionInformation = 1, OOBE DisablePrivacyExperience = 1 (verify); «Поиск устройства» в Параметрах неактивен."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Потерянный ноутбук нельзя найти через account.microsoft.com."
+actions:
+  - id: find-my-device
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\FindMyDevice'
+      name: AllowFindMyDevice
+      kind: DWord
+      data: "0"
+  - id: msrt-no-report
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\MRT'
+      name: DontReportInfectionInformation
+      kind: DWord
+      data: "1"
+  - id: no-privacy-experience
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE'
+      name: DisablePrivacyExperience
+      kind: DWord
+      data: "1"
