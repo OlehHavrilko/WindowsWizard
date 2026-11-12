@@ -6,7 +6,7 @@ ZIP, шифрование ZipCrypto (штатное для zip в 7-Zip), пар
 файлы лежат в корне архива (playbook.conf, Configuration/, Executables/). Формат 7z AME Beta 0.8.4 не открыл.
 Без внешних зависимостей: ZipCrypto пишется вручную.
 
-Использование: python tools/package.py --exe path/to/bareos.exe [--out releases]
+Использование: python tools/package.py --exe path/to/bareos.exe --toolbox path/to/BareOS-Toolbox.exe [--out releases]
 """
 import argparse, hashlib, os, shutil, struct, subprocess, sys, tempfile, time, zlib
 import xml.etree.ElementTree as ET
@@ -82,19 +82,22 @@ def main():
     repo = Path(__file__).resolve().parent.parent
     ap = argparse.ArgumentParser()
     ap.add_argument("--exe", required=True, type=Path)
+    ap.add_argument("--toolbox", required=True, type=Path)
     ap.add_argument("--out", type=Path, default=repo / "releases")
     a = ap.parse_args()
 
     if subprocess.call([sys.executable, str(repo / "tools" / "validate.py")]) != 0:
         sys.exit("валидация не пройдена")
-    if not a.exe.is_file():
-        sys.exit(f"нет {a.exe}")
+    for f in (a.exe, a.toolbox):
+        if not f.is_file():
+            sys.exit(f"нет {f}")
     version = ET.parse(repo / "Playbook" / "playbook.conf").getroot().findtext("Version")
 
     with tempfile.TemporaryDirectory() as tmp:
         stage = Path(tmp) / "pb"
         shutil.copytree(repo / "Playbook", stage)
         shutil.copy2(a.exe, stage / "Executables" / "bareos.exe")
+        shutil.copy2(a.toolbox, stage / "Executables" / "BareOS-Toolbox.exe")
         shutil.copytree(repo / "catalog", stage / "Executables" / "catalog", ignore=shutil.ignore_patterns("*.json"))
         files = sorted((p.relative_to(stage).as_posix(), p) for p in stage.rglob("*") if p.is_file())
         a.out.mkdir(parents=True, exist_ok=True)

@@ -21,7 +21,19 @@ jobs:
         run: dotnet publish src/BareOS.Cli -c Release -r win-x64 -o publish
       - name: Smoke-тест exe
         run: ./publish/bareos.exe validate --catalog catalog
+      - name: Publish Toolbox (WPF, self-contained single-file)
+        run: dotnet publish src/BareOS.Toolbox -c Release -r win-x64 -o publish-toolbox
+      - name: Сборка .apbx (плейбук + движок + Toolbox)
+        run: python tools/package.py --exe publish/bareos.exe --toolbox publish-toolbox/BareOS-Toolbox.exe --out dist
       - uses: actions/upload-artifact@v4
         with:
           name: bareos-win-x64
           path: publish/bareos.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bareos-toolbox-win-x64
+          path: publish-toolbox/BareOS-Toolbox.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bareos-playbook-apbx
+          path: dist/*

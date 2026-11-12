@@ -32,7 +32,7 @@
 ### `tools/package.py` — упаковщик
 
 1. Проверяет результат валидатора.
-2. Собирает **ZIP** (ZipCrypto, deflate) из **содержимого** `Playbook/` (не из папки целиком), плюс `bareos.exe` и `catalog/` в `Executables/`.
+2. Собирает **ZIP** (ZipCrypto, deflate) из **содержимого** `Playbook/` (не из папки целиком), плюс `bareos.exe`, `BareOS-Toolbox.exe` (`--toolbox`) и `catalog/` в `Executables/`.
 3. Имя: `Bare OS-<версия>.apbx`.
 4. Считает SHA-256 архива, пишет рядом файл контрольной суммы.
 5. Кладёт в `releases/`.
