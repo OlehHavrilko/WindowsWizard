@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="BareOS">
+  <!-- оптическая версия для 16–24 px: толще штрих, крупнее курсор -->
+  <g fill="none" stroke="#ECEAE4" stroke-width="12" stroke-linejoin="miter">
+    <path d="M18 8V92"/>
+    <path d="M18 46H36A20 20 0 0 1 36 86H18"/>
+  </g>
+  <rect x="66" y="80" width="22" height="12" fill="#3DDC97"/>
+</svg>
