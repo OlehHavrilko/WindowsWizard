@@ -3,6 +3,8 @@ title: Bare OS
 description: Применение каталога параметров движком bareos
 privilege: Admin
 actions:
+  - !task: {path: 'Tasks/05-measure-before.yml'}
   - !task: {path: 'Tasks/10-plan.yml'}
   - !task: {path: 'Tasks/20-apply.yml'}
   - !task: {path: 'Tasks/90-verify.yml'}
+  - !task: {path: 'Tasks/95-proof.yml'}

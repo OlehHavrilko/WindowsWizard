@@ -1,0 +1,30 @@
+id: shell.start-suggestions
+title: "Предложения приложений в Пуске и тихая установка приложений выключены"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Убрать рекламные предложения в Пуске и аккаунте (DisableConsumerAccountStateContent), запретить удалённую тихую установку приложений (PushToInstall) и повторную установку предложенных приложений через Windows Update (MRT)."
+evidence: "Политики DisableConsumerAccountStateContent = 1, DisablePushToInstall = 1, DontOfferThroughWUAU = 1; в Пуске нет рекламных плиток (verify и визуально)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: account-state-content
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableConsumerAccountStateContent
+      kind: DWord
+      data: "1"
+  - id: push-to-install
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\PushToInstall'
+      name: DisablePushToInstall
+      kind: DWord
+      data: "1"
+  - id: mrt-no-offer
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\MRT'
+      name: DontOfferThroughWUAU
+      kind: DWord
+      data: "1"

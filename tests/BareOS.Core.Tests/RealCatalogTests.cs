@@ -220,3 +220,31 @@ public class ServiceMissingTests
         Assert.Equal(ActionStatus.Failed, rep.Entries.Single().Status);
     }
 }
+
+public class ProofTests
+{
+    private static BareOS.Core.Proof.Snapshot S(string l, double procs, double apps)
+        => new(l, DateTimeOffset.UnixEpoch, new() { ["proc.count"] = procs, ["appx.installed"] = apps });
+
+    [Fact]
+    public void Compare_OnlyCommonMetrics_DeltaAndPercent()
+    {
+        var rows = BareOS.Core.Proof.Proof.Compare(S("до", 200, 100), S("после", 150, 60));
+        Assert.Equal(2, rows.Count);
+        var p = rows.Single(r => r.Info.Key == "proc.count");
+        Assert.Equal(-50, p.Delta);
+        Assert.Equal(-25, p.Percent);
+        Assert.True(p.Improved);
+    }
+
+    [Fact]
+    public void Text_And_Html_Render_AndRoundTrip()
+    {
+        var b = S("до", 200, 100); var a = S("после", 210, 60);
+        var t = BareOS.Core.Proof.Proof.ToText(b, a);
+        Assert.Contains("лучше", t); Assert.Contains("хуже", t);
+        Assert.Contains("<table>", BareOS.Core.Proof.Proof.ToHtml(b, a));
+        var rt = BareOS.Core.Proof.Proof.Deserialize(BareOS.Core.Proof.Proof.Serialize(b));
+        Assert.Equal(200, rt.Metrics["proc.count"]);
+    }
+}

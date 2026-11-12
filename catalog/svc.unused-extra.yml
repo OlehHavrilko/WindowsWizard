@@ -1,0 +1,33 @@
+id: svc.unused-extra
+title: "Редко нужные службы отключены: Fax, RemoteRegistry, WpcMon, PhoneSvc, геолокация"
+verdict: Standard
+stability: Moderate
+category: service
+scope: machine
+risk: T2
+status: accepted
+intent: "Отключить службы, не нужные на домашнем десктопе: Fax, RemoteRegistry (удалённый доступ к реестру), WpcMonSvc (родительский контроль), PhoneSvc (телефония), lfsvc (геолокация). Если службы нет в сборке, действие считается выполненным."
+evidence: "Службы Fax, RemoteRegistry, WpcMonSvc, PhoneSvc, lfsvc: Start = 4 (Disabled) или отсутствуют; число служб с автозапуском и запущенных после входа уменьшается (замер Proof Report)."
+reversibility: "revert по baseline: тип запуска служб возвращается к исходному"
+breaks: "Не работают факс, родительский контроль, определение местоположения приложениями."
+actions:
+  - id: fax
+    service:
+      name: Fax
+      start: Disabled
+  - id: remoteregistry
+    service:
+      name: RemoteRegistry
+      start: Disabled
+  - id: wpcmonsvc
+    service:
+      name: WpcMonSvc
+      start: Disabled
+  - id: phonesvc
+    service:
+      name: PhoneSvc
+      start: Disabled
+  - id: lfsvc
+    service:
+      name: lfsvc
+      start: Disabled

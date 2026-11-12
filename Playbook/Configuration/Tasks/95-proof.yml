@@ -1,0 +1,7 @@
+---
+title: Proof Report
+description: замер после и сравнение
+actions:
+  - !writeStatus: {status: 'Замер после изменений и Proof Report'}
+  - !run: {exeDir: true, exe: 'bareos-run.cmd', args: 'measure --label after'}
+  - !run: {exeDir: true, exe: 'bareos-run.cmd', args: 'proof'}
