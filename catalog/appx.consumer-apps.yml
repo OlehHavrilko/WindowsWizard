@@ -1,0 +1,49 @@
+id: appx.consumer-apps
+title: "Потребительские приложения удалены (Clipchamp, Teams, Phone Link, Solitaire и др.)"
+verdict: Standard
+stability: Stable
+category: appx
+scope: machine
+risk: T3
+status: accepted
+intent: "Удалить явный потребительский мусор: Clipchamp, Teams, Phone Link, Solitaire Collection, Cortana, Tips, Get Help, Feedback Hub, Power Automate, To Do, новый Outlook. Store, Xbox, Defender, WSL и средства разработки не затрагиваются (защищённый список в движке)."
+evidence: "Get-AppxPackage -AllUsers по каждому из перечисленных имён не возвращает пакетов (verify); число предустановленных пакетов уменьшается (замер Proof Report)."
+reversibility: "не восстанавливается откатом (D-033): вернуть приложение можно из Microsoft Store или winget; baseline хранит список удалённых пакетов"
+breaks: "Удалённое приложение перестаёт работать; новые пользователи его не получат."
+actions:
+  - id: clipchamp
+    appx:
+      name: 'Clipchamp.Clipchamp'
+  - id: teams
+    appx:
+      name: 'MicrosoftTeams'
+  - id: teams-new
+    appx:
+      name: 'MSTeams'
+  - id: phone-link
+    appx:
+      name: 'Microsoft.YourPhone'
+  - id: solitaire
+    appx:
+      name: 'Microsoft.MicrosoftSolitaireCollection'
+  - id: cortana
+    appx:
+      name: 'Microsoft.549981C3F5F10'
+  - id: tips
+    appx:
+      name: 'Microsoft.Getstarted'
+  - id: get-help
+    appx:
+      name: 'Microsoft.GetHelp'
+  - id: feedback-hub
+    appx:
+      name: 'Microsoft.WindowsFeedbackHub'
+  - id: power-automate
+    appx:
+      name: 'Microsoft.PowerAutomateDesktop'
+  - id: todo
+    appx:
+      name: 'Microsoft.Todos'
+  - id: outlook-new
+    appx:
+      name: 'Microsoft.OutlookForWindows'

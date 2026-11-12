@@ -4,6 +4,13 @@
 
 ---
 
+## v0.2-dev — Appx и видимая оптимизация (D-033)
+
+- Действие `appx` (удаление пакетов для всех пользователей и из provisioned), `AppxAccess` через Windows PowerShell, защищённый список (Store/Xbox/Defender/WSL/winget/среды выполнения).
+- Карточки `appx.copilot`, `appx.widgets`, `appx.weather-news`, `appx.consumer-apps`; откат Appx не восстанавливает и говорит об этом явно.
+
+---
+
 ## v0.2-dev — playbook-обёртка
 
 - `Playbook/`: `playbook.conf` (UniqueId `ffeab6fe-1e87-4d06-930f-06f0fdb62bd5`, 26300), `main.yml` и задачи `plan → apply → verify` через `bareos-run.cmd`, `playbook.png`.

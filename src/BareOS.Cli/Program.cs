@@ -141,7 +141,7 @@ public static class Program
         var registry = new RegistryAccess();
         // Обход блокировки UCPD через локальную групповую политику (D-031): пишем через gpsvc, когда прямая запись
         // запрещена ОС. Защиту не отключает, поэтому включён всегда, в отличие от отключения самой службы UCPD.
-        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry));
+        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry), new AppxAccess());
         // миллисекунды + суффикс: два прогона в одну секунду не должны делить каталог (baseline не перезаписывается → preflight падал бы)
         var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..4];
         var jsonStore = new JsonRunStore(dataDir);

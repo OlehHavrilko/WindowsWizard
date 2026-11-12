@@ -39,11 +39,14 @@ public sealed class TweakEngine : ITweakEngine
     private static bool Satisfies(TaskState cur, TaskTarget t)
         => t.Enabled ? cur.Exists && cur.Enabled : !cur.Exists || !cur.Enabled;
 
+    private IAppxAccess Appx => _env.Appx ?? throw new InvalidOperationException("Обработчик appx не настроен (IAppxAccess)");
+    private static string FmtAppx(IReadOnlyList<string> found) => found.Count == 0 ? "<absent>" : "present: " + string.Join(", ", found);
+
     private ITaskAccess Tasks => _env.Tasks ?? throw new InvalidOperationException("Обработчик task не настроен (ITaskAccess)");
 
     private static string TargetOf(TweakAction a) => a.Registry != null
         ? $"{a.Registry.Path}\\{a.Registry.Name}"
-        : a.Service != null ? $"service:{a.Service.Name}" : $"task:{a.Task!.Path}";
+        : a.Service != null ? $"service:{a.Service.Name}" : a.Task != null ? $"task:{a.Task.Path}" : $"appx:{a.Appx!.Name}";
 
     private static RegValue ExpectedReg(RegistryTarget r) => new(true, r.Kind, r.Data);
     private static ServiceState ExpectedSvc(ServiceTarget s) => new(true, s.Start);
@@ -51,30 +54,35 @@ public sealed class TweakEngine : ITweakEngine
     private string CurrentStr(TweakAction a) =>
         a.Registry != null ? Fmt(_env.Registry.Read(a.Registry.Path, a.Registry.Name))
         : a.Service != null ? Fmt(_env.Services.Read(a.Service.Name))
-        : Fmt(Tasks.Read(a.Task!.Path));
+        : a.Task != null ? Fmt(Tasks.Read(a.Task.Path))
+        : FmtAppx(Appx.Find(a.Appx!.Name));
 
     private static string ExpectedStr(TweakAction a) =>
         a.Registry != null ? Fmt(ExpectedReg(a.Registry))
         : a.Service != null ? Fmt(ExpectedSvc(a.Service))
-        : (a.Task!.Enabled ? "Enabled" : "Disabled (или <missing>)");
+        : a.Task != null ? (a.Task.Enabled ? "Enabled" : "Disabled (или <missing>)")
+        : "<absent>";
 
     private bool MatchesExpected(TweakAction a) =>
         a.Registry != null ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), ExpectedReg(a.Registry))
         : a.Service != null ? Same(_env.Services.Read(a.Service.Name), ExpectedSvc(a.Service))
-        : Satisfies(Tasks.Read(a.Task!.Path), a.Task);
+        : a.Task != null ? Satisfies(Tasks.Read(a.Task.Path), a.Task)
+        : Appx.Find(a.Appx!.Name).Count == 0;
 
     private BaselineEntry Capture(string tweakId, TweakAction a) =>
         a.Registry != null ? new BaselineEntry(tweakId, a.Id, _env.Registry.Read(a.Registry.Path, a.Registry.Name), null, null, _env.Registry.KeyExists(a.Registry.Path))
         : a.Service != null ? new BaselineEntry(tweakId, a.Id, null, _env.Services.Read(a.Service.Name))
-        : new BaselineEntry(tweakId, a.Id, null, null, Tasks.Read(a.Task!.Path));
+        : a.Task != null ? new BaselineEntry(tweakId, a.Id, null, null, Tasks.Read(a.Task.Path))
+        : new BaselineEntry(tweakId, a.Id, null, null, null, null, string.Join("; ", Appx.Find(a.Appx!.Name)));
 
     private static bool HasState(BaselineEntry e, TweakAction a)
-        => a.Registry != null ? e.Registry != null : a.Service != null ? e.Service != null : e.Task != null;
+        => a.Registry != null ? e.Registry != null : a.Service != null ? e.Service != null : a.Task != null && e.Task != null;
 
     private static bool CapturedExpected(BaselineEntry e, TweakAction a)
         => a.Registry != null ? Same(e.Registry!, ExpectedReg(a.Registry))
          : a.Service != null ? Same(e.Service!, ExpectedSvc(a.Service))
-         : Satisfies(e.Task!, a.Task!);
+         : a.Task != null ? Satisfies(e.Task!, a.Task)
+         : false;
 
     /// <summary>Снимок цели для отката: самый новый, в котором цель ещё НЕ была в ожидаемом состоянии
     /// (т. е. сделанный перед тем, как движок её изменил). Если во всех снимках цель уже была ожидаемой —
@@ -193,7 +201,8 @@ public sealed class TweakEngine : ITweakEngine
             if (a.Service.Start == StartType.Disabled && wasRunning)
                 try { _env.Services.StopService(a.Service.Name); } catch (Exception) { /* служба остановится при перезагрузке */ }
         }
-        else Tasks.SetEnabled(a.Task!.Path, a.Task.Enabled);
+        else if (a.Task != null) Tasks.SetEnabled(a.Task.Path, a.Task.Enabled);
+        else Appx.Remove(a.Appx!.Name);
     }
 
     /// <summary>BlockedByOS, если отказ в реестровом действии вызван UCPD (см. <see cref="UcpdGuard"/>); иначе null.
@@ -265,6 +274,17 @@ public sealed class TweakEngine : ITweakEngine
         foreach (var (t, a) in actions)
         {
             string expected = ExpectedStr(a), cur = "";
+            if (a.Appx != null)
+            {
+                // Удалённый Appx из baseline не вернуть (D-033): честно сообщаем, а не делаем вид, что откатили.
+                string now;
+                try { now = CurrentStr(a); } catch (Exception ex) { now = "<error: " + ex.Message + ">"; }
+                var ar = new ReportEntry(t.Id, a.Id, ActionStatus.Skipped, now, now, "",
+                    "Appx не восстанавливается откатом (D-033): вернуть приложение можно из Microsoft Store или winget. Baseline: "
+                    + (baselines.SelectMany(b => b.Entries).LastOrDefault(e => e.TweakId == t.Id && e.ActionId == a.Id)?.AppxPackages ?? "<нет записи>"));
+                entries.Add(ar); TryJournal(ar);
+                continue;
+            }
             try
             {
                 var be = PickBaseline(baselines, t.Id, a);
@@ -277,7 +297,7 @@ public sealed class TweakEngine : ITweakEngine
                     entries.Add(nr); TryJournal(nr);
                     continue;
                 }
-                string baseStr = a.Registry != null ? Fmt(be.Registry!) : a.Service != null ? Fmt(be.Service!) : Fmt(be.Task!);
+                string baseStr = a.Registry != null ? Fmt(be.Registry!) : a.Service != null ? Fmt(be.Service!) : Fmt(be.Task!);   // Appx сюда не доходит: обработан выше
                 cur = CurrentStr(a);
                 bool IsBaseNow() => a.Registry != null
                     ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), be.Registry!)
