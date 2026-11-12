@@ -7,6 +7,7 @@
 ## v0.2-dev — Appx и видимая оптимизация (D-033)
 
 - Действие `appx` (удаление пакетов для всех пользователей и из provisioned), `AppxAccess` через Windows PowerShell, защищённый список (Store/Xbox/Defender/WSL/winget/среды выполнения).
+- Каталог 25 карточек: реклама Spotlight, поиск без веба и Cortana, диагностика, фоновые приложения, Edge без фонового режима, лишние службы, партнёрские Appx; `onedrive.remove` как proposed. Отсутствие службы при `Disabled` считается выполненным.
 - Карточки `appx.copilot`, `appx.widgets`, `appx.weather-news`, `appx.consumer-apps`; откат Appx не восстанавливает и говорит об этом явно.
 
 ---

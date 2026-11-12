@@ -1,0 +1,55 @@
+id: appx.promo-apps
+title: "Рекламные предустановленные приложения удалены (TikTok, Spotify, Disney и др.)"
+verdict: Standard
+stability: Stable
+category: appx
+scope: machine
+risk: T3
+status: accepted
+intent: "Удалить партнёрские приложения, которые Windows ставит как рекламу: Candy Crush, Spotify, Disney, TikTok, Facebook, Instagram, LinkedIn, Prime Video, Skype, Mixed Reality Portal и 3D Viewer, Люди и Карты."
+evidence: "Get-AppxPackage -AllUsers по каждому из перечисленных шаблонов не возвращает пакетов (verify); число предустановленных пакетов уменьшается (замер Proof Report)."
+reversibility: "не восстанавливается откатом (D-033): вернуть приложение можно из Microsoft Store или winget; baseline хранит список удалённых пакетов"
+breaks: "Удалённое приложение перестаёт работать."
+actions:
+  - id: candy-crush
+    appx:
+      name: '*CandyCrush*'
+  - id: spotify
+    appx:
+      name: '*Spotify*'
+  - id: disney
+    appx:
+      name: '*Disney*'
+  - id: tiktok
+    appx:
+      name: '*TikTok*'
+  - id: facebook
+    appx:
+      name: '*Facebook*'
+  - id: instagram
+    appx:
+      name: '*Instagram*'
+  - id: linkedin
+    appx:
+      name: '*LinkedIn*'
+  - id: prime-video
+    appx:
+      name: '*AmazonPrimeVideo*'
+  - id: skype
+    appx:
+      name: 'Microsoft.SkypeApp'
+  - id: mixed-reality
+    appx:
+      name: 'Microsoft.MixedReality.Portal'
+  - id: 3d-viewer
+    appx:
+      name: 'Microsoft.Microsoft3DViewer'
+  - id: people
+    appx:
+      name: 'Microsoft.People'
+  - id: maps
+    appx:
+      name: 'Microsoft.WindowsMaps'
+  - id: bing-search
+    appx:
+      name: 'Microsoft.BingSearch'

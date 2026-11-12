@@ -1,0 +1,30 @@
+id: privacy.diag-extra
+title: "Диагностика: выгрузка логов и OneSettings выключены"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Дополнительно ограничить диагностику: логи диагностики, загрузка настроек OneSettings, имя устройства в данных."
+evidence: "Политики DataCollection: LimitDiagnosticLogCollection = 1, DisableOneSettingsDownloads = 1, AllowDeviceNameInTelemetry = 0; процесс CompatTelRunner и обращения к settings-win.data.microsoft.com отсутствуют (замер Proof Report)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: limit-diag-logs
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+      name: LimitDiagnosticLogCollection
+      kind: DWord
+      data: "1"
+  - id: no-onesettings
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+      name: DisableOneSettingsDownloads
+      kind: DWord
+      data: "1"
+  - id: no-device-name
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+      name: AllowDeviceNameInTelemetry
+      kind: DWord
+      data: "0"

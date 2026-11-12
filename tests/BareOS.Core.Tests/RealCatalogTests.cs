@@ -198,3 +198,25 @@ public class AppxEngineTests
         Assert.Equal(ActionStatus.Mismatch, e.Status);
     }
 }
+
+public class ServiceMissingTests
+{
+    [Fact]
+    public void Disabled_ForMissingService_IsAlreadyApplied_NoWrites()
+    {
+        var r = new Rig();
+        var rep = r.Engine.Apply(new[] { Rig.T("t.svc", Rig.Svc_("a", "NoSuchService", StartType.Disabled)) });
+        Assert.Equal(ActionStatus.AlreadyApplied, rep.Entries.Single().Status);
+        Assert.Empty(r.Svc.Writes);
+        Assert.Equal(ActionStatus.Verified, r.Engine.Verify(new[] { Rig.T("t.svc", Rig.Svc_("a", "NoSuchService", StartType.Disabled)) }).Entries.Single().Status);
+    }
+
+    [Fact]
+    public void Manual_ForMissingService_StillFails()
+    {
+        var r = new Rig();
+        r.Svc.FailWhen = (_, _) => true;
+        var rep = r.Engine.Apply(new[] { Rig.T("t.svc", Rig.Svc_("a", "NoSuchService", StartType.Manual)) });
+        Assert.Equal(ActionStatus.Failed, rep.Entries.Single().Status);
+    }
+}

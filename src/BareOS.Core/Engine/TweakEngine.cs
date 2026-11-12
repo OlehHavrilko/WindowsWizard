@@ -32,6 +32,10 @@ public sealed class TweakEngine : ITweakEngine
     private static bool Same(ServiceState a, ServiceState b)
         => a.Exists == b.Exists && (!a.Exists || a.Start == b.Start);
 
+    /// <summary>Для Disabled отсутствие службы в этой сборке считается выполненным (ничего не запускается), как и для задач.</summary>
+    private static bool SvcSatisfied(ServiceState cur, ServiceTarget t)
+        => (!cur.Exists && t.Start == StartType.Disabled) || Same(cur, ExpectedSvc(t));
+
     private static string Fmt(TaskState t) => t.Exists ? (t.Enabled ? "Enabled" : "Disabled") : "<missing>";
     private static bool Same(TaskState a, TaskState b)
         => a.Exists == b.Exists && (!a.Exists || a.Enabled == b.Enabled);
@@ -59,13 +63,13 @@ public sealed class TweakEngine : ITweakEngine
 
     private static string ExpectedStr(TweakAction a) =>
         a.Registry != null ? Fmt(ExpectedReg(a.Registry))
-        : a.Service != null ? Fmt(ExpectedSvc(a.Service))
+        : a.Service != null ? (a.Service.Start == StartType.Disabled ? "Disabled (или <missing>)" : Fmt(ExpectedSvc(a.Service)))
         : a.Task != null ? (a.Task.Enabled ? "Enabled" : "Disabled (или <missing>)")
         : "<absent>";
 
     private bool MatchesExpected(TweakAction a) =>
         a.Registry != null ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), ExpectedReg(a.Registry))
-        : a.Service != null ? Same(_env.Services.Read(a.Service.Name), ExpectedSvc(a.Service))
+        : a.Service != null ? SvcSatisfied(_env.Services.Read(a.Service.Name), a.Service)
         : a.Task != null ? Satisfies(Tasks.Read(a.Task.Path), a.Task)
         : Appx.Find(a.Appx!.Name).Count == 0;
 
@@ -80,7 +84,7 @@ public sealed class TweakEngine : ITweakEngine
 
     private static bool CapturedExpected(BaselineEntry e, TweakAction a)
         => a.Registry != null ? Same(e.Registry!, ExpectedReg(a.Registry))
-         : a.Service != null ? Same(e.Service!, ExpectedSvc(a.Service))
+         : a.Service != null ? SvcSatisfied(e.Service!, a.Service)
          : a.Task != null ? Satisfies(e.Task!, a.Task)
          : false;
 

@@ -1,0 +1,36 @@
+id: search.web-off
+title: "Поиск Windows: Cortana и веб-поиск выключены"
+verdict: Standard
+stability: Stable
+category: convenience
+scope: machine
+risk: T1
+status: accepted
+intent: "Отключить Cortana, веб-результаты и использование геолокации в поиске Windows: поиск ищет только локально."
+evidence: "Политики Windows Search: AllowCortana = 0, DisableWebSearch = 1, ConnectedSearchUseWeb = 0, AllowSearchToUseLocation = 0; запрос в поиске не создаёт сетевых обращений процесса SearchHost (замер Proof Report)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: allow-cortana
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+      name: AllowCortana
+      kind: DWord
+      data: "0"
+  - id: disable-web-search
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+      name: DisableWebSearch
+      kind: DWord
+      data: "1"
+  - id: connected-search-web
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+      name: ConnectedSearchUseWeb
+      kind: DWord
+      data: "0"
+  - id: search-location
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+      name: AllowSearchToUseLocation
+      kind: DWord
+      data: "0"

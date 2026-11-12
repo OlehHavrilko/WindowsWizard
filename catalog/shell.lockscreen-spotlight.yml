@@ -1,0 +1,42 @@
+id: shell.lockscreen-spotlight
+title: "Реклама Spotlight на экране блокировки, в Параметрах и центре уведомлений выключена"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Отключить рекламный контент Windows Spotlight: экран блокировки, Параметры, центр уведомлений, экран приветствия и облачную оптимизацию содержимого."
+evidence: "Политики CloudContent: DisableWindowsSpotlightFeatures, DisableWindowsSpotlightOnActionCenter, DisableWindowsSpotlightOnSettings, DisableWindowsSpotlightWindowsWelcomeExperience, DisableCloudOptimizedContent = 1; на экране блокировки нет рекламных подсказок (проверка verify и визуально)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: spotlight-features
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableWindowsSpotlightFeatures
+      kind: DWord
+      data: "1"
+  - id: spotlight-action-center
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableWindowsSpotlightOnActionCenter
+      kind: DWord
+      data: "1"
+  - id: spotlight-settings
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableWindowsSpotlightOnSettings
+      kind: DWord
+      data: "1"
+  - id: spotlight-welcome
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableWindowsSpotlightWindowsWelcomeExperience
+      kind: DWord
+      data: "1"
+  - id: cloud-optimized-content
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
+      name: DisableCloudOptimizedContent
+      kind: DWord
+      data: "1"
