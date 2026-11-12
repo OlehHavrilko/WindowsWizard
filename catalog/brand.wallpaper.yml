@@ -1,0 +1,35 @@
+id: brand.wallpaper
+title: "Обои Bare OS на рабочем столе"
+verdict: Standard
+stability: Stable
+category: appearance
+scope: user
+risk: T1
+status: accepted
+intent: "Копирует обои Bare OS в Windows\\Web\\Wallpaper\\BareOS и ставит их рабочим столом текущего пользователя (заполнение). Выбор обоев не блокируется политикой: пользователь меняет их как обычно. Обои появятся после следующего входа в систему."
+evidence: "Файл обоев лежит в Windows\\Web\\Wallpaper\\BareOS с тем же SHA-256, что ресурс; значение HKCU Control Panel\\Desktop Wallpaper указывает на него (verify)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Обои меняются на фирменные; верните прежние через откат или «Персонализация»."
+actions:
+  - id: wallpaper-file
+    file:
+      source: 'wallpaper-16x9.png'
+      dest: '%WINDIR%\Web\Wallpaper\BareOS\bareos-wallpaper.png'
+  - id: wallpaper-path
+    registry:
+      path: 'HKCU\Control Panel\Desktop'
+      name: Wallpaper
+      kind: String
+      data: "C:\\Windows\\Web\\Wallpaper\\BareOS\\bareos-wallpaper.png"
+  - id: wallpaper-style
+    registry:
+      path: 'HKCU\Control Panel\Desktop'
+      name: WallpaperStyle
+      kind: String
+      data: "10"
+  - id: wallpaper-tile
+    registry:
+      path: 'HKCU\Control Panel\Desktop'
+      name: TileWallpaper
+      kind: String
+      data: "0"

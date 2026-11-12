@@ -123,7 +123,7 @@
             "properties": {
               "path": {
                 "type": "string",
-                "pattern": "^(HKLM|HKCU)\\\\"
+                "pattern": "^(HKLM|HKCU|HKDU)\\\\"
               },
               "name": {
                 "type": "string"
@@ -198,6 +198,24 @@
                 "pattern": "^[A-Za-z0-9._*-]{3,128}$"
               }
             }
+          },
+          "file": {
+            "type": "object",
+            "required": [
+              "source",
+              "dest"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string",
+                "pattern": "^[^.:\\\\][^:]*$"
+              },
+              "dest": {
+                "type": "string",
+                "pattern": "^(%WINDIR%\\\\Web\\\\|%ProgramData%\\\\BareOS\\\\).+[^\\\\]$"
+              }
+            }
           }
         },
         "oneOf": [
@@ -219,6 +237,11 @@
           {
             "required": [
               "appx"
+            ]
+          },
+          {
+            "required": [
+              "file"
             ]
           }
         ]

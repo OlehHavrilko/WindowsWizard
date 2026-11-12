@@ -103,6 +103,14 @@ def main():
         shutil.copy2(a.exe, stage / "Executables" / "bareos.exe")
         shutil.copy2(a.toolbox, stage / "Executables" / "BareOS-Toolbox.exe")
         shutil.copytree(repo / "catalog", stage / "Executables" / "catalog", ignore=shutil.ignore_patterns("*.json"))
+        # Ресурсы действий file (обои, логотип OEM): bareos ищет их в Executables/resources рядом с catalog
+        res = stage / "Executables" / "resources"
+        res.mkdir(parents=True, exist_ok=True)
+        for name in ("wallpaper-16x9.png", "oem-logo.bmp"):
+            src = repo / "branding" / "out" / name
+            if not src.exists():
+                sys.exit(f"Нет ресурса {src}: запустите tools/branding/wallpaper.js и tools/branding/render.js")
+            shutil.copy2(src, res / name)
         files = sorted((p.relative_to(stage).as_posix(), p) for p in stage.rglob("*") if p.is_file())
         a.out.mkdir(parents=True, exist_ok=True)
         apbx = a.out / f"Bare OS-{version}.apbx"

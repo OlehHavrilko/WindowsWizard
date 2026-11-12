@@ -1,0 +1,24 @@
+id: brand.dark-mode
+title: "Тёмная тема Windows и приложений"
+verdict: Standard
+stability: Stable
+category: appearance
+scope: user
+risk: T1
+status: accepted
+intent: "AppsUseLightTheme = 0 и SystemUsesLightTheme = 0 для текущего пользователя: тёмная тема системы и приложений, как в оформлении Bare OS."
+evidence: "Значения HKCU Themes\\Personalize AppsUseLightTheme = 0 и SystemUsesLightTheme = 0 (verify); панель задач и Параметры тёмные."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: apps-dark
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+      name: AppsUseLightTheme
+      kind: DWord
+      data: "0"
+  - id: system-dark
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+      name: SystemUsesLightTheme
+      kind: DWord
+      data: "0"

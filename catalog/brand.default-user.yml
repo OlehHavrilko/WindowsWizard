@@ -1,0 +1,43 @@
+id: brand.default-user
+title: "Оформление Bare OS для новых пользователей"
+verdict: Standard
+stability: Moderate
+category: appearance
+scope: machine
+risk: T2
+status: accepted
+intent: "Те же обои, тёмная тема и акцент записываются в профиль по умолчанию (C:\\Users\\Default): новые учётные записи получат оформление Bare OS сразу."
+evidence: "Значения в кусте Default User (HKDU) совпадают с каталогом: Wallpaper, AppsUseLightTheme, SystemUsesLightTheme, AccentColor (verify)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Профиль по умолчанию меняется один раз: уже созданные пользователи не затрагиваются."
+actions:
+  - id: du-wallpaper
+    registry:
+      path: 'HKDU\Control Panel\Desktop'
+      name: Wallpaper
+      kind: String
+      data: "C:\\Windows\\Web\\Wallpaper\\BareOS\\bareos-wallpaper.png"
+  - id: du-wallpaper-style
+    registry:
+      path: 'HKDU\Control Panel\Desktop'
+      name: WallpaperStyle
+      kind: String
+      data: "10"
+  - id: du-apps-dark
+    registry:
+      path: 'HKDU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+      name: AppsUseLightTheme
+      kind: DWord
+      data: "0"
+  - id: du-system-dark
+    registry:
+      path: 'HKDU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+      name: SystemUsesLightTheme
+      kind: DWord
+      data: "0"
+  - id: du-accent
+    registry:
+      path: 'HKDU\Software\Microsoft\Windows\DWM'
+      name: AccentColor
+      kind: DWord
+      data: "4288273469"
