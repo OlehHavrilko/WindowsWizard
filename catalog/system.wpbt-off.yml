@@ -1,0 +1,21 @@
+id: system.wpbt-off
+title: "WPBT выключен: прошивка не устанавливает программы производителя при загрузке"
+verdict: Standard
+stability: Stable
+category: system
+scope: machine
+risk: T1
+status: accepted
+source: "Разбор WinUtil (Chris Titus), твик WPBT, 2026-11-12"
+intent: "DisableWpbtExecution = 1: Windows не запускает исполняемый файл из таблицы ACPI WPBT. Через неё производители (ASUS Armoury Crate, Lenovo Vantage и др.) ставят свой софт на каждую чистую установку."
+evidence: "Значение Session Manager\\DisableWpbtExecution = 1 (verify); после перезагрузки в System32 не появляется wpbbin.exe и не ставятся службы производителя (сравнение списка служб до/после, Proof Report)."
+reversibility: "revert по baseline: значение удаляется"
+breaks: "Не сработает антивор-софт производителя в прошивке (Computrace/Absolute), если он нужен."
+delay: reboot
+actions:
+  - id: disable-wpbt
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager'
+      name: DisableWpbtExecution
+      kind: DWord
+      data: "1"

@@ -1,0 +1,20 @@
+id: storage.cleanup
+title: "Очистка после применения: хранилище компонентов и временные файлы"
+verdict: Standard
+stability: Stable
+category: storage
+scope: machine
+risk: T1
+status: proposed
+source: "Разбор WinUtil (Chris Titus), твики DiskCleanup и DeleteTempFiles, 2026-11-12"
+intent: "DISM /StartComponentCleanup (без /ResetBase: установленные обновления остаются удаляемыми) и очистка %WINDIR%\\Temp и %TEMP%. Запускается последней, после удаления приложений."
+evidence: "Свободное место на системном диске до и после; освобождённый объём в байтах — в отчёте и Proof Report."
+reversibility: "не восстанавливается: удалённые временные файлы и старые версии компонентов не возвращаются (как appx, D-033)"
+breaks: "Старые версии обновлённых компонентов удаляются; откатить уже установленные обновления по-прежнему можно."
+actions:
+  - id: component-store
+    cleanup:
+      kind: ComponentStore
+  - id: temp-files
+    cleanup:
+      kind: Temp

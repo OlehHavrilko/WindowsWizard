@@ -1,0 +1,39 @@
+id: shell.explorer-home
+title: "Проводник открывает «Этот компьютер», без «Главной» и «Галереи»"
+verdict: Standard
+stability: Moderate
+category: appearance
+scope: user
+risk: T1
+status: proposed
+delay: relogon
+source: "Разбор WinUtil (Chris Titus), твик RemoveHomeAndGallery, 2026-11-12"
+intent: "LaunchTo = 1: Проводник открывается на «Этом компьютере» (текущий пользователь и профиль по умолчанию). System.IsPinnedToNameSpaceTree = 0 для CLSID «Главной» и «Галереи» убирает их из панели навигации текущего пользователя."
+evidence: "Значения Explorer\\Advanced\\LaunchTo = 1 (HKCU, HKDU) и CLSID {f874310e-…}/{e88865ea-…} System.IsPinnedToNameSpaceTree = 0 (verify); новое окно Проводника открывается на «Этом компьютере», в навигации нет «Главной» и «Галереи»."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Нет ленты «Недавние» и «Избранное» на «Главной». Для новых пользователей убирается только стартовая страница: CLSID живут в UsrClass.dat, а не в NTUSER.DAT."
+actions:
+  - id: launch-to-this-pc
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+      name: LaunchTo
+      kind: DWord
+      data: "1"
+  - id: du-launch-to-this-pc
+    registry:
+      path: 'HKDU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+      name: LaunchTo
+      kind: DWord
+      data: "1"
+  - id: hide-home
+    registry:
+      path: 'HKCU\Software\Classes\CLSID\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}'
+      name: System.IsPinnedToNameSpaceTree
+      kind: DWord
+      data: "0"
+  - id: hide-gallery
+    registry:
+      path: 'HKCU\Software\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}'
+      name: System.IsPinnedToNameSpaceTree
+      kind: DWord
+      data: "0"

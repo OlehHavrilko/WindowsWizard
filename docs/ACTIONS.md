@@ -76,3 +76,19 @@
 | проверка результата | отдельным сценарием внутри playbook ([VERIFICATION](VERIFICATION.md)) |
 
 Отсутствие условной логики — главное ограничение при проектировании: если параметр зависит от состояния системы (например, от наличия конкретного драйвера), это решается не в YAML, а в проверочном сценарии, который сообщает о несовместимости, а не пытается её обойти.
+
+
+## 6. Действия движка `feature` и `cleanup` (D-035)
+
+Это действия карточек каталога `catalog/*.yml`, а не AME-действия из разделов выше.
+
+| Действие | YAML | Что делает | verify | revert |
+|---|---|---|---|---|
+| `feature` | `feature: { name: Recall, state: Disabled }` (`Enabled` или `Disabled`) | отключает или включает необязательный компонент Windows через `dism.exe` (`/Get-FeatureInfo /English`, `/Disable-Feature /NoRestart`, `/Enable-Feature /All /NoRestart`); код 3010 (нужна перезагрузка) не ошибка | состояние совпадает с ожидаемым; компонента нет в сборке (`<absent>`) для `Disabled` считается выполненным | возвращает исходное состояние из baseline |
+| `cleanup` | `cleanup: { kind: ComponentStore }` или `{ kind: Temp }` | одноразовая очистка: `ComponentStore` — `dism /Online /Cleanup-Image /StartComponentCleanup` (без `/ResetBase`); `Temp` — содержимое `%WINDIR%\Temp` и `%TEMP%` (занятые файлы пропускаются молча) | всегда `Verified`; повторный apply допустим | ничего не делает, статус `Skipped` (необратимо) |
+
+Правила:
+
+1. Имя компонента — только `[A-Za-z0-9._-]`, 3–128 символов. Загрузчик каталога отклоняет Hyper-V, `VirtualMachinePlatform`, `HypervisorPlatform`, `Microsoft-Windows-Subsystem-Linux`, `Containers`, `Windows-Defender` (подстрока, без учёта регистра).
+2. `cleanup` замеряет свободное место на системном диске до и после: в отчёте `Before = free=<байт>`, `After = free=<байт>`; разница — освобождённые байты для Proof Report.
+3. Обычно после `feature` нужна перезагрузка; в отчёте это не ошибка.

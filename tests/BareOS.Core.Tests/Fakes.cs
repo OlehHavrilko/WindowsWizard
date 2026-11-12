@@ -99,6 +99,40 @@ public sealed class FakeAppx : IAppxAccess
     }
 }
 
+public sealed class FakeFeatures : IFeatureAccess
+{
+    public Dictionary<string, bool> State = new(StringComparer.OrdinalIgnoreCase);   // имя -> включён; нет ключа = компонента нет
+    public List<string> Calls = new();
+    public Func<string, bool>? FailWhen;
+
+    public FeatureState Read(string name) => State.TryGetValue(name, out var e) ? new FeatureState(true, e) : new FeatureState(false);
+
+    public void SetEnabled(string name, bool enabled)
+    {
+        if (FailWhen?.Invoke(name) == true) throw new IOException("injected feature failure " + name);
+        Calls.Add((enabled ? "enable:" : "disable:") + name);
+        if (State.ContainsKey(name)) State[name] = enabled;
+    }
+}
+
+public sealed class FakeCleanup : ICleanupAccess
+{
+    public long Free = 1_000_000;
+    public long FreedPerRun = 500;
+    public List<string> Calls = new();
+    public bool Fail;
+
+    public long FreeBytes() => Free;
+    public void ComponentStore() { Run("component-store"); }
+    public void Temp() { Run("temp"); }
+    private void Run(string kind)
+    {
+        if (Fail) throw new IOException("injected cleanup failure " + kind);
+        Calls.Add(kind);
+        Free += FreedPerRun;
+    }
+}
+
 public sealed class FakeFiles : IFileAccess
 {
     public Dictionary<string, string> Sources = new();          // source -> содержимое
@@ -193,6 +227,8 @@ public sealed class Rig
     public FakeTasks Tasks = new();
     public FakeAppx Appx = new();
     public FakeFiles Files = new();
+    public FakeFeatures Features = new();
+    public FakeCleanup Cleanup = new();
     public MemStore Store = new();
     public ITweakEngine Engine;
     public const string K = @"HKLM\SOFTWARE\Test";
@@ -211,7 +247,7 @@ public sealed class Rig
     }
 
     private ITweakEngine Make(string runId)
-        => new TweakEngine(new EngineEnv(Reg, Svc, () => _now, Tasks, Policy, Appx, Files), _store, runId);
+        => new TweakEngine(new EngineEnv(Reg, Svc, () => _now, Tasks, Policy, Appx, Files, Features, Cleanup), _store, runId);
 
     /// <summary>Новый прогон (новый процесс bareos) на том же хранилище и той же «системе», на минуту позже.</summary>
     public ITweakEngine NextRun(string runId)
@@ -240,5 +276,9 @@ public sealed class Rig
         new(id, File: new FileTarget(source, dest));
     public static TweakAction Appx_(string id, string name) =>
         new(id, Appx: new AppxTarget(name));
+    public static TweakAction Feature_(string id, string name, bool enabled) =>
+        new(id, Feature: new FeatureTarget(name, enabled));
+    public static TweakAction Cleanup_(string id, CleanupKind kind) =>
+        new(id, Cleanup: new CleanupTarget(kind));
     public static RegValue D(int v) => new(true, RegKind.DWord, v.ToString());
 }

@@ -1,0 +1,26 @@
+id: appx.extra-apps
+title: "Ещё предустановленные приложения удалены (Dev Home, Кино и ТВ, рекламный блок Пуска, Cross Device)"
+verdict: Standard
+stability: Stable
+category: appx
+scope: machine
+risk: T3
+status: accepted
+source: "Разбор WinUtil (Chris Titus), appx.json, 2026-11-12"
+intent: "Удалить то, что не вошло в appx.consumer-apps: Dev Home (снят с поддержки Microsoft), StartExperiencesApp (рекламный блок в меню «Пуск»), «Кино и ТВ», Cross Device (связь с телефоном в «Пуске»; Phone Link уже удаляется). Media Player оставлен: это плеер аудио по умолчанию. Xbox не трогаем (защищённый список D-033)."
+evidence: "Get-AppxPackage -AllUsers для Microsoft.Windows.DevHome, Microsoft.StartExperiencesApp, Microsoft.ZuneVideo, MicrosoftWindows.CrossDevice не возвращает пакетов (verify); число предустановленных пакетов уменьшается (замер Proof Report)."
+reversibility: "не восстанавливается откатом (D-033): вернуть приложение можно из Microsoft Store или winget; baseline хранит список удалённых пакетов"
+breaks: "Пропадает панель телефона в «Пуске»; «Кино и ТВ» больше не открывает видео по умолчанию (останутся «Фотографии» и Media Player)."
+actions:
+  - id: dev-home
+    appx:
+      name: 'Microsoft.Windows.DevHome'
+  - id: start-experiences
+    appx:
+      name: 'Microsoft.StartExperiencesApp'
+  - id: movies-tv
+    appx:
+      name: 'Microsoft.ZuneVideo'
+  - id: cross-device
+    appx:
+      name: 'MicrosoftWindows.CrossDevice'

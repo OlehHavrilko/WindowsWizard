@@ -1,0 +1,47 @@
+id: privacy.windows-ai
+title: "Windows AI выключен: Recall, служба AI Fabric, AI в Блокноте и Paint"
+verdict: Standard
+stability: Moderate
+category: privacy
+scope: machine
+risk: T2
+status: proposed
+delay: reboot
+source: "Разбор WinUtil (Chris Titus), твик WindowsAI, 2026-11-12"
+intent: "Дополняет privacy.recall: компонент Recall отключается в DISM, служба WSAIFabricSvc не запускается, генеративные функции Блокнота (Rewrite/Summarize) и Paint (Cocreator, генеративная заливка, Image Creator) выключены политиками. Пакет CoreAI не удаляется: это системный пакет (ACTIONS, правило 4)."
+evidence: "DISM: компонент Recall в состоянии Disabled или отсутствует; служба WSAIFabricSvc Start = 4 или отсутствует и не запущена после входа; политики WindowsNotepad\\DisableAIFeatures = 1 и Paint\\DisableCocreator/DisableGenerativeFill/DisableImageCreator = 1 (verify); кнопки AI в Блокноте и Paint пропадают."
+reversibility: "revert по baseline: компонент Recall и тип запуска службы возвращаются к исходным, значения реестра удаляются"
+breaks: "Не работают Recall, Click to Do и AI-функции Блокнота и Paint. На ПК без Copilot+ части эффекта нет: компонент и служба могут отсутствовать."
+actions:
+  - id: recall-feature
+    feature:
+      name: Recall
+      state: Disabled
+  - id: ai-fabric-service
+    service:
+      name: WSAIFabricSvc
+      start: Disabled
+  - id: notepad-ai
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\WindowsNotepad'
+      name: DisableAIFeatures
+      kind: DWord
+      data: "1"
+  - id: paint-cocreator
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Paint'
+      name: DisableCocreator
+      kind: DWord
+      data: "1"
+  - id: paint-generative-fill
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Paint'
+      name: DisableGenerativeFill
+      kind: DWord
+      data: "1"
+  - id: paint-image-creator
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Paint'
+      name: DisableImageCreator
+      kind: DWord
+      data: "1"

@@ -176,7 +176,8 @@ public static class Program
         // Обход блокировки UCPD через локальную групповую политику (D-031): пишем через gpsvc, когда прямая запись
         // запрещена ОС. Защиту не отключает, поэтому включён всегда, в отличие от отключения самой службы UCPD.
         var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry), new AppxAccess(),
-            new BareOS.Core.Windows.FileAccess(resourcesDir, Path.Combine(dataDir, "backups")));
+            new BareOS.Core.Windows.FileAccess(resourcesDir, Path.Combine(dataDir, "backups")),
+            new FeatureAccess(), new CleanupAccess());
         // миллисекунды + суффикс: два прогона в одну секунду не должны делить каталог (baseline не перезаписывается → preflight падал бы)
         var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..4];
         var jsonStore = new JsonRunStore(dataDir);

@@ -52,11 +52,22 @@ public sealed class TweakEngine : ITweakEngine
     private static bool Same(FileState a, FileState b)
         => a.Exists == b.Exists && (!a.Exists || string.Equals(a.Sha256, b.Sha256, StringComparison.OrdinalIgnoreCase));
 
+    private IFeatureAccess Features => _env.Features ?? throw new InvalidOperationException("Обработчик feature не настроен (IFeatureAccess)");
+    private ICleanupAccess Cleanup => _env.Cleanup ?? throw new InvalidOperationException("Обработчик cleanup не настроен (ICleanupAccess)");
+    private static string Fmt(FeatureState f) => f.Exists ? (f.Enabled ? "Enabled" : "Disabled") : "<absent>";
+    private static bool Same(FeatureState a, FeatureState b)
+        => a.Exists == b.Exists && (!a.Exists || a.Enabled == b.Enabled);
+    /// <summary>Для Enabled=false отсутствие компонента в сборке считается выполненным (отключать нечего), как у служб и задач.</summary>
+    private static bool Satisfies(FeatureState cur, FeatureTarget t)
+        => t.Enabled ? cur.Exists && cur.Enabled : !cur.Exists || !cur.Enabled;
+    private string FreeStr() => "free=" + Cleanup.FreeBytes().ToString(System.Globalization.CultureInfo.InvariantCulture);
+
     private ITaskAccess Tasks => _env.Tasks ?? throw new InvalidOperationException("Обработчик task не настроен (ITaskAccess)");
 
     private static string TargetOf(TweakAction a) => a.Registry != null
         ? $"{a.Registry.Path}\\{a.Registry.Name}"
-        : a.Service != null ? $"service:{a.Service.Name}" : a.Task != null ? $"task:{a.Task.Path}" : a.File != null ? $"file:{a.File.Dest}" : $"appx:{a.Appx!.Name}";
+        : a.Service != null ? $"service:{a.Service.Name}" : a.Task != null ? $"task:{a.Task.Path}" : a.File != null ? $"file:{a.File.Dest}"
+            : a.Feature != null ? $"feature:{a.Feature.Name}" : a.Cleanup != null ? $"cleanup:{a.Cleanup.Kind}" : $"appx:{a.Appx!.Name}";
 
     private static RegValue ExpectedReg(RegistryTarget r) => new(true, r.Kind, r.Data);
     private static ServiceState ExpectedSvc(ServiceTarget s) => new(true, s.Start);
@@ -66,6 +77,8 @@ public sealed class TweakEngine : ITweakEngine
         : a.Service != null ? Fmt(_env.Services.Read(a.Service.Name))
         : a.Task != null ? Fmt(Tasks.Read(a.Task.Path))
         : a.File != null ? Fmt(Files.Read(a.File.Dest))
+        : a.Feature != null ? Fmt(Features.Read(a.Feature.Name))
+        : a.Cleanup != null ? FreeStr()
         : FmtAppx(Appx.Find(a.Appx!.Name));
 
     private string ExpectedStr(TweakAction a) =>
@@ -73,6 +86,8 @@ public sealed class TweakEngine : ITweakEngine
         : a.Service != null ? (a.Service.Start == StartType.Disabled ? "Disabled (или <missing>)" : Fmt(ExpectedSvc(a.Service)))
         : a.Task != null ? (a.Task.Enabled ? "Enabled" : "Disabled (или <missing>)")
         : a.File != null ? "sha256:" + Short(SourceHashSafe(a.File))
+        : a.Feature != null ? (a.Feature.Enabled ? "Enabled" : "Disabled (или <absent>)")
+        : a.Cleanup != null ? $"cleanup {a.Cleanup.Kind} (одноразовая, необратимая)"
         : "<absent>";
 
     private string? SourceHashSafe(FileTarget f) { try { return _env.Files?.SourceHash(f.Source); } catch (Exception) { return "<нет ресурса>"; } }
@@ -82,6 +97,8 @@ public sealed class TweakEngine : ITweakEngine
         : a.Service != null ? SvcSatisfied(_env.Services.Read(a.Service.Name), a.Service)
         : a.Task != null ? Satisfies(Tasks.Read(a.Task.Path), a.Task)
         : a.File != null ? FileMatches(Files.Read(a.File.Dest), a.File)
+        : a.Feature != null ? Satisfies(Features.Read(a.Feature.Name), a.Feature)
+        : a.Cleanup != null ? true   // одноразовое действие: после успешного apply всегда «выполнено»
         : Appx.Find(a.Appx!.Name).Count == 0;
 
     private bool FileMatches(FileState cur, FileTarget t)
@@ -101,15 +118,18 @@ public sealed class TweakEngine : ITweakEngine
         a.Registry != null ? new BaselineEntry(tweakId, a.Id, _env.Registry.Read(a.Registry.Path, a.Registry.Name), null, null, _env.Registry.KeyExists(a.Registry.Path))
         : a.Service != null ? new BaselineEntry(tweakId, a.Id, null, _env.Services.Read(a.Service.Name))
         : a.Task != null ? new BaselineEntry(tweakId, a.Id, null, null, Tasks.Read(a.Task.Path))
+        : a.Feature != null ? new BaselineEntry(tweakId, a.Id, null, null, Feature: Features.Read(a.Feature.Name))
+        : a.Cleanup != null ? new BaselineEntry(tweakId, a.Id, null, null)   // состояния нет: очистка необратима
         : new BaselineEntry(tweakId, a.Id, null, null, null, null, string.Join("; ", Appx.Find(a.Appx!.Name)));
 
     private static bool HasState(BaselineEntry e, TweakAction a)
-        => a.Registry != null ? e.Registry != null : a.Service != null ? e.Service != null : a.Task != null ? e.Task != null : a.File != null && e.File != null;
+        => a.Registry != null ? e.Registry != null : a.Service != null ? e.Service != null : a.Task != null ? e.Task != null : a.File != null ? e.File != null : a.Feature != null && e.Feature != null;
 
     private bool CapturedExpected(BaselineEntry e, TweakAction a)
         => a.Registry != null ? Same(e.Registry!, ExpectedReg(a.Registry))
          : a.Service != null ? SvcSatisfied(e.Service!, a.Service)
          : a.Task != null ? Satisfies(e.Task!, a.Task)
+         : a.Feature != null ? Satisfies(e.Feature!, a.Feature)
          : a.File != null && e.File!.Exists && string.Equals(e.File.Sha256, Files.SourceHash(a.File.Source), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Снимок цели для отката: самый новый, в котором цель ещё НЕ была в ожидаемом состоянии
@@ -185,7 +205,7 @@ public sealed class TweakEngine : ITweakEngine
                 before = CurrentStr(a);
                 Journal(new ReportEntry(t.Id, a.Id, ActionStatus.Started, before, "", expected));
                 ReportEntry res;
-                if (MatchesExpected(a))
+                if (a.Cleanup == null && MatchesExpected(a))   // cleanup выполняется всегда: повторный apply допустим
                     res = new ReportEntry(t.Id, a.Id, ActionStatus.AlreadyApplied, before, before, expected);
                 else
                 {
@@ -231,6 +251,11 @@ public sealed class TweakEngine : ITweakEngine
         }
         else if (a.Task != null) Tasks.SetEnabled(a.Task.Path, a.Task.Enabled);
         else if (a.File != null) Files.Copy(a.File.Source, a.File.Dest);
+        else if (a.Feature != null) Features.SetEnabled(a.Feature.Name, a.Feature.Enabled);
+        else if (a.Cleanup != null)
+        {
+            if (a.Cleanup.Kind == CleanupKind.ComponentStore) Cleanup.ComponentStore(); else Cleanup.Temp();
+        }
         else Appx.Remove(a.Appx!.Name);
     }
 
@@ -314,6 +339,16 @@ public sealed class TweakEngine : ITweakEngine
                 entries.Add(ar); TryJournal(ar);
                 continue;
             }
+            if (a.Cleanup != null)
+            {
+                // Очистка необратима (D-035): откат ничего не делает, но говорит об этом явно.
+                string now;
+                try { now = CurrentStr(a); } catch (Exception ex) { now = "<error: " + ex.Message + ">"; }
+                var cr = new ReportEntry(t.Id, a.Id, ActionStatus.Skipped, now, now, "",
+                    "Очистка необратима (D-035): удалённые файлы и устаревшие компоненты откатом не возвращаются");
+                entries.Add(cr); TryJournal(cr);
+                continue;
+            }
             try
             {
                 var be = PickBaseline(baselines, t.Id, a);
@@ -326,12 +361,13 @@ public sealed class TweakEngine : ITweakEngine
                     entries.Add(nr); TryJournal(nr);
                     continue;
                 }
-                string baseStr = a.Registry != null ? Fmt(be.Registry!) : a.Service != null ? Fmt(be.Service!) : a.File != null ? Fmt(be.File!) : Fmt(be.Task!);   // Appx сюда не доходит: обработан выше
+                string baseStr = a.Registry != null ? Fmt(be.Registry!) : a.Service != null ? Fmt(be.Service!) : a.File != null ? Fmt(be.File!) : a.Feature != null ? Fmt(be.Feature!) : Fmt(be.Task!);   // Appx сюда не доходит: обработан выше
                 cur = CurrentStr(a);
                 bool IsBaseNow() => a.Registry != null
                     ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), be.Registry!)
                     : a.Service != null ? Same(_env.Services.Read(a.Service.Name), be.Service!)
                     : a.File != null ? Same(Files.Read(a.File.Dest), be.File!)
+                    : a.Feature != null ? Same(Features.Read(a.Feature.Name), be.Feature!)
                     : Same(Tasks.Read(a.Task!.Path), be.Task!);
                 bool isBase = IsBaseNow();
                 ReportEntry res;
@@ -347,6 +383,10 @@ public sealed class TweakEngine : ITweakEngine
                     else if (a.Task != null && !be.Task!.Exists)
                     {
                         res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, cur, baseStr, "Задачи не было в baseline, восстановление невозможно");
+                    }
+                    else if (a.Feature != null && !be.Feature!.Exists)
+                    {
+                        res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, cur, baseStr, "Компонента не было в baseline, восстановление невозможно");
                     }
                     else if (a.File != null && be.File!.Exists && be.File.BackupPath is null)
                     {
@@ -383,6 +423,7 @@ public sealed class TweakEngine : ITweakEngine
                             if (be.Service.Running && be.Service.Start != StartType.Disabled && !_env.Services.Read(a.Service.Name).Running)
                                 try { _env.Services.StartService(a.Service.Name); } catch (Exception) { /* запустится при перезагрузке (тип запуска восстановлен) */ }
                         }
+                        else if (a.Feature != null) Features.SetEnabled(a.Feature.Name, be.Feature!.Enabled);   // 3010 (перезагрузка) — не ошибка; Pending читается как целевое состояние
                         else Tasks.SetEnabled(a.Task!.Path, be.Task!.Enabled);
                         var after = CurrentStr(a);
                         bool ok = IsBaseNow();

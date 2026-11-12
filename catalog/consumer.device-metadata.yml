@@ -1,0 +1,20 @@
+id: consumer.device-metadata
+title: "Фирменные программы устройств не ставятся автоматически"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+source: "Разбор WinUtil (Chris Titus), твик PreventDeviceMetadataFromNetwork, 2026-11-12"
+intent: "PreventDeviceMetadataFromNetwork = 1: Windows не скачивает метаданные устройств и не предлагает и не ставит сопутствующие приложения (Razer, Logitech и др.) при подключении устройства. Драйверы продолжают ставиться."
+evidence: "Политика Device Metadata\\PreventDeviceMetadataFromNetwork = 1 (verify); при подключении периферии не появляются новые пакеты Appx и службы производителя (сравнение до/после)."
+reversibility: "revert по baseline: значение удаляется"
+breaks: "Значки устройств в «Устройствах и принтерах» могут быть общими; фирменное ПО периферии нужно ставить вручную."
+actions:
+  - id: no-device-metadata
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Device Metadata'
+      name: PreventDeviceMetadataFromNetwork
+      kind: DWord
+      data: "1"
