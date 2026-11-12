@@ -66,6 +66,7 @@ public static class UcpdGuard
     }
 
     public static string Explain(string path, string name, string? detail = null)
-        => $"{Reason}: драйвер защиты UCPD не даёт менять {path}\\{name}. Bare OS его не отключает и не обходит (D-030)."
+        => $"{Reason}: драйвер защиты UCPD не даёт менять {path}\\{name}. Bare OS пробует обход через локальную"
+           + $" групповую политику (D-031), саму защиту ОС не отключает (D-030)."
            + (string.IsNullOrEmpty(detail) ? "" : " " + detail);
 }
