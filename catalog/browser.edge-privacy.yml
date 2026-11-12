@@ -1,0 +1,49 @@
+id: browser.edge-privacy
+title: "Microsoft Edge: диагностика, метрики и Rewards выключены"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Выключить отправку диагностики и метрик Edge, запросы отзывов, рекомендации Spotlight, Microsoft Rewards и содержимое новой вкладки. Сам Edge остаётся."
+evidence: "Политики Edge DiagnosticData = 0, MetricsReportingEnabled = 0, UserFeedbackAllowed = 0, SpotlightExperiencesAndRecommendationsEnabled = 0, ShowMicrosoftRewards = 0, NewTabPageContentEnabled = 0 (verify, edge://policy)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Новая вкладка без ленты новостей; в Edge показывается «Управляется организацией» (это следствие политик)."
+actions:
+  - id: diag
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: DiagnosticData
+      kind: DWord
+      data: "0"
+  - id: metrics
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: MetricsReportingEnabled
+      kind: DWord
+      data: "0"
+  - id: feedback
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: UserFeedbackAllowed
+      kind: DWord
+      data: "0"
+  - id: spotlight
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: SpotlightExperiencesAndRecommendationsEnabled
+      kind: DWord
+      data: "0"
+  - id: rewards
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: ShowMicrosoftRewards
+      kind: DWord
+      data: "0"
+  - id: ntp-content
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: NewTabPageContentEnabled
+      kind: DWord
+      data: "0"

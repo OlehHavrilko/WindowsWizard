@@ -1,0 +1,30 @@
+id: shell.explorer-lean
+title: "Проводник: без поиска приложений в Store и рекомендаций сайтов"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "NoUseStoreOpenWith и NoInternetOpenWith: диалог «Открыть с помощью» не предлагает приложения из Store и поиск в интернете; HideRecommendedPersonalizedSites убирает рекомендованные сайты в Проводнике."
+evidence: "Политики Explorer NoUseStoreOpenWith = 1, NoInternetOpenWith = 1, HideRecommendedPersonalizedSites = 1 (verify)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: no-store-openwith
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer'
+      name: NoUseStoreOpenWith
+      kind: DWord
+      data: "1"
+  - id: no-internet-openwith
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer'
+      name: NoInternetOpenWith
+      kind: DWord
+      data: "1"
+  - id: no-recommended-sites
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer'
+      name: HideRecommendedPersonalizedSites
+      kind: DWord
+      data: "1"
