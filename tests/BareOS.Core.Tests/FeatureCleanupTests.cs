@@ -259,6 +259,15 @@ public class CleanupEngineTests
     public void CleanupAccess_IsSafeRoot_RejectsDriveRootAndShallow()
     {
         Assert.False(CleanupAccess.IsSafeRoot("/"));
+        var notTemp = Directory.CreateTempSubdirectory("bos-").FullName;
+        var inner = Directory.CreateDirectory(Path.Join(notTemp, "data")).FullName;
+        var temp = Directory.CreateDirectory(Path.Join(notTemp, "Temp")).FullName;
+        try
+        {
+            Assert.False(CleanupAccess.IsSafeRoot(inner));   // существует, но без каталога Temp в пути
+            Assert.True(CleanupAccess.IsSafeRoot(temp));
+        }
+        finally { Directory.Delete(notTemp, true); }
         Assert.False(CleanupAccess.IsSafeRoot(Path.Combine(Path.GetTempPath(), "bos-definitely-missing-" + Guid.NewGuid().ToString("N"))));
     }
 }

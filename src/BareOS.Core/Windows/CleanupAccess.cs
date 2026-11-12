@@ -35,15 +35,21 @@ public sealed class CleanupAccess : ICleanupAccess
             if (IsSafeRoot(d)) Clear(new DirectoryInfo(d));
     }
 
-    /// <summary>Не корень диска и не каталог короче двух уровней: защита от неверной переменной среды.</summary>
+    /// <summary>Не корень диска, не каталог короче двух уровней и в пути есть каталог Temp или SystemTemp:
+    /// защита от неверной переменной среды (TEMP=C:\Windows не должен очистить Windows).</summary>
     public static bool IsSafeRoot(string dir)
     {
         var full = Path.GetFullPath(dir);
         var root = Path.GetPathRoot(full) ?? "";
+        var parts = full.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
         return full.TrimEnd('\\', '/').Length > root.TrimEnd('\\', '/').Length
-            && full.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries).Length >= 2
+            && parts.Length >= 2
+            && parts.Skip(1).Any(IsTempName)
             && Directory.Exists(full);
     }
+
+    private static bool IsTempName(string segment)
+        => segment.Equals("Temp", StringComparison.OrdinalIgnoreCase) || segment.Equals("SystemTemp", StringComparison.OrdinalIgnoreCase);
 
     private static void Clear(DirectoryInfo dir)
     {
