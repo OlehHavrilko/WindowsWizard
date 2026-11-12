@@ -1,0 +1,6 @@
+---
+title: Замер до изменений
+description: bareos measure (Proof Report)
+actions:
+  - !writeStatus: {status: 'Замер состояния системы до изменений'}
+  - !run: {exeDir: true, exe: 'bareos-run.cmd', args: 'measure --label before'}

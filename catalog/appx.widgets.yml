@@ -1,0 +1,16 @@
+id: appx.widgets
+title: "Платформа виджетов (Widgets, WebExperience) удалена"
+verdict: Standard
+stability: Fragile
+category: appx
+scope: machine
+risk: T3
+status: accepted
+intent: "Убрать панель виджетов с погодой, новостями и рекламой удалением пакета WebExperience: политика AllowNewsAndInterests заблокирована UCPD на 24H2+, а пакет UCPD не защищает."
+evidence: "Get-AppxPackage -AllUsers MicrosoftWindows.Client.WebExperience не возвращает пакета; кнопки виджетов нет на панели задач, процессов Widgets* и WebExperience* после входа нет (замер Proof Report)."
+reversibility: "не восстанавливается откатом (D-033): вернуть приложение можно из Microsoft Store или winget; baseline хранит список удалённых пакетов"
+breaks: "Удалённое приложение перестаёт работать; новые пользователи его не получат."
+actions:
+  - id: web-experience
+    appx:
+      name: 'MicrosoftWindows.Client.WebExperience'

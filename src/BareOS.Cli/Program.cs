@@ -10,7 +10,7 @@ namespace BareOS.Cli;
 public static class Program
 {
     private const string Usage = """
-        Использование: bareos <plan|apply|verify|revert|report|validate> [опции]
+        Использование: bareos <plan|apply|verify|revert|report|validate|measure|proof> [опции]
           --catalog <dir>   каталог карточек (по умолчанию ./catalog)
           --data <dir>      каталог прогонов (по умолчанию %ProgramData%\BareOS\runs)
           --only <id,id>    выполнить только перечисленные твики (в т. ч. proposed; без --only берутся accepted/verified)
@@ -18,6 +18,8 @@ public static class Program
           --json            вывод в JSON
           --allow-ucpd-disable  (apply/revert) отключить саму защиту UCPD (служба + задача velocity), а не
                             обходить её (D-032); требует перезагрузки, чтобы вступить в силу; по умолчанию выключен
+        measure --label <имя> --out <файл.json> — замер системы (Proof Report); без --out пишет в %ProgramData%\BareOS\proof\<label>.json.
+        proof --before <a.json> --after <b.json> [--html <файл>] — сравнить два замера (по умолчанию before.json, after.json, proof.html в той же папке).
         validate — проверить каталог карточек и выйти (CI).
         Код выхода: 0 — всё в порядке (в т. ч. BlockedByOS — заблокировано ОС (UCPD)), 1 — есть проблемы, 2 — ошибка использования, валидации или среды (нет прав, замок занят).
         """;
@@ -55,7 +57,7 @@ public static class Program
         }
 
         var command = args[0].ToLowerInvariant();
-        if (command is not ("plan" or "apply" or "verify" or "revert" or "report" or "validate"))
+        if (command is not ("plan" or "apply" or "verify" or "revert" or "report" or "validate" or "measure" or "proof"))
             return Fail($"Неизвестная команда: {args[0]}\n{Usage}");
 
         string tweaksDir = "catalog";
@@ -64,6 +66,7 @@ public static class Program
         bool json = false;
         bool allowUcpdDisable = false;
         string runArg = "latest";
+        string label = "замер", outFile = "", beforeFile = "", afterFile = "", htmlFile = "";
 
         for (int i = 1; i < args.Length; i++)
         {
@@ -77,9 +80,35 @@ public static class Program
                     break;
                 case "--run": if (!TryNext(args, ref i, out runArg!)) return Fail("--run требует значение"); break;
                 case "--json": json = true; break;
+                case "--label": if (!TryNext(args, ref i, out label!)) return Fail("--label требует значение"); break;
+                case "--out": if (!TryNext(args, ref i, out outFile!)) return Fail("--out требует значение"); break;
+                case "--before": if (!TryNext(args, ref i, out beforeFile!)) return Fail("--before требует значение"); break;
+                case "--after": if (!TryNext(args, ref i, out afterFile!)) return Fail("--after требует значение"); break;
+                case "--html": if (!TryNext(args, ref i, out htmlFile!)) return Fail("--html требует значение"); break;
                 case "--allow-ucpd-disable": allowUcpdDisable = true; break;
                 default: return Fail($"Неизвестный аргумент: {args[i]}\n{Usage}");
             }
+        }
+
+        if (command == "measure")
+        {
+            if (outFile == "") outFile = Path.Combine(ProofDir(), label + ".json");
+            var snap = SystemProbe.Take(label);
+            var text = BareOS.Core.Proof.Proof.Serialize(snap);
+            if (outFile != "") { Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outFile))!); File.WriteAllText(outFile, text); Console.WriteLine($"Замер '{label}' сохранён: {outFile} ({snap.Metrics.Count} метрик)"); }
+            else Console.WriteLine(text);
+            return 0;
+        }
+        if (command == "proof")
+        {
+            if (beforeFile == "") beforeFile = Path.Combine(ProofDir(), "before.json");
+            if (afterFile == "") afterFile = Path.Combine(ProofDir(), "after.json");
+            if (htmlFile == "") htmlFile = Path.Combine(ProofDir(), "proof.html");
+            var b = BareOS.Core.Proof.Proof.Deserialize(File.ReadAllText(beforeFile));
+            var a = BareOS.Core.Proof.Proof.Deserialize(File.ReadAllText(afterFile));
+            Console.WriteLine(BareOS.Core.Proof.Proof.ToText(b, a));
+            if (htmlFile != "") { File.WriteAllText(htmlFile, BareOS.Core.Proof.Proof.ToHtml(b, a)); Console.WriteLine($"HTML-отчёт: {htmlFile}"); }
+            return 0;
         }
 
         if (command == "report")
@@ -141,7 +170,7 @@ public static class Program
         var registry = new RegistryAccess();
         // Обход блокировки UCPD через локальную групповую политику (D-031): пишем через gpsvc, когда прямая запись
         // запрещена ОС. Защиту не отключает, поэтому включён всегда, в отличие от отключения самой службы UCPD.
-        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry));
+        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry), new AppxAccess());
         // миллисекунды + суффикс: два прогона в одну секунду не должны делить каталог (baseline не перезаписывается → preflight падал бы)
         var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..4];
         var jsonStore = new JsonRunStore(dataDir);
@@ -167,6 +196,8 @@ public static class Program
         else PrintReport(report);
         return report.Ok ? 0 : 1;
     }
+
+    private static string ProofDir() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BareOS", "proof");
 
     private static bool IsActive(Tweak t) => t.Status is null || t.Status is "accepted" or "verified";
 

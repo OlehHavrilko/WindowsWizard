@@ -1,0 +1,29 @@
+id: task.background-extra
+title: "Фоновые задачи диагностики и обратной связи отключены"
+verdict: Standard
+stability: Fragile
+category: task
+scope: machine
+risk: T2
+status: accepted
+intent: "Отключить задачи планировщика: сбор диагностики диска, отправка отчётов об ошибках в очереди, запросы обратной связи (Siuf), карты. Системные задачи обслуживания и обновления не затрагиваются."
+evidence: "Состояние задач DiskDiagnosticDataCollector, QueueReporting, DmClient, MapsUpdateTask = Disabled; задачи не запускаются по расписанию. Отсутствующая задача считается выполненной."
+reversibility: "revert по baseline: задачи возвращаются в исходное состояние"
+breaks: "Компоненты обновления могут пересоздавать задачи (класс Fragile): после крупного обновления нужен verify."
+actions:
+  - id: disk-diag
+    task:
+      path: '\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector'
+      state: disabled
+  - id: wer-queue
+    task:
+      path: '\Microsoft\Windows\Windows Error Reporting\QueueReporting'
+      state: disabled
+  - id: siuf-dmclient
+    task:
+      path: '\Microsoft\Windows\Feedback\Siuf\DmClient'
+      state: disabled
+  - id: maps-update
+    task:
+      path: '\Microsoft\Windows\Maps\MapsUpdateTask'
+      state: disabled

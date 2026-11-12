@@ -1,0 +1,19 @@
+id: onedrive.remove
+title: "OneDrive: синхронизация файлов выключена политикой"
+verdict: Option
+stability: Stable
+category: privacy
+scope: machine
+risk: T2
+status: proposed
+intent: "Запретить синхронизацию файлов OneDrive политикой (клиент остаётся). Опция: у кого OneDrive используется, ломает синхронизацию."
+evidence: "Политика OneDrive: DisableFileSyncNGSC = 1; процесс OneDrive.exe не запускается после входа (замер Proof Report)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Не синхронизируются файлы OneDrive."
+actions:
+  - id: onedrive-disable-sync
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive'
+      name: DisableFileSyncNGSC
+      kind: DWord
+      data: "1"

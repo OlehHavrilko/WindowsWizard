@@ -1,0 +1,19 @@
+id: perf.gamedvr
+title: "Фоновая запись игр (Game DVR) выключена"
+verdict: Standard
+stability: Stable
+category: performance
+scope: machine
+risk: T1
+status: accepted
+intent: "Выключить фоновую запись игровых клипов Game DVR: убирает постоянную нагрузку захвата и службу оверлея."
+evidence: "Политика AllowGameDVR = 0; процессы GameBar-захвата не запускаются (замер Proof Report)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Не работают игровые клипы Win+Alt+R."
+actions:
+  - id: allow-gamedvr
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR'
+      name: AllowGameDVR
+      kind: DWord
+      data: "0"

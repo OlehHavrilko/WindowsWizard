@@ -1,0 +1,25 @@
+id: svc.telemetry-adjacent
+title: "Лишние службы отключены: WAP Push, Карты, демо-режим"
+verdict: Standard
+stability: Moderate
+category: service
+scope: machine
+risk: T2
+status: accepted
+intent: "Отключить службы, которые не нужны на десктопе: dmwappushservice (WAP push, канал телеметрии), MapsBroker (загрузка офлайн-карт), RetailDemo (демо-режим магазина). Если службы в сборке нет, действие считается выполненным."
+evidence: "Службы dmwappushservice, MapsBroker, RetailDemo: Start = 4 (Disabled) или отсутствуют; число запущенных служб после входа уменьшается (замер Proof Report)."
+reversibility: "revert по baseline: тип запуска служб возвращается к исходному"
+breaks: "Офлайн-карты Windows не обновляются."
+actions:
+  - id: dmwappushservice
+    service:
+      name: dmwappushservice
+      start: Disabled
+  - id: mapsbroker
+    service:
+      name: MapsBroker
+      start: Disabled
+  - id: retaildemo
+    service:
+      name: RetailDemo
+      start: Disabled

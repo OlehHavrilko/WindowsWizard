@@ -1,0 +1,19 @@
+id: appx.copilot
+title: "Приложения Copilot и Microsoft 365 (Office-хаб) удалены"
+verdict: Standard
+stability: Moderate
+category: appx
+scope: machine
+risk: T3
+status: accepted
+intent: "Удалить предустановленные приложения Copilot и «Microsoft 365 (Office)», которые запускаются в фоне и показывают предложения подписок."
+evidence: "Get-AppxPackage -AllUsers для Microsoft.Copilot и Microsoft.MicrosoftOfficeHub не возвращает пакетов (verify); после входа процессов Copilot* и M365Copilot* нет, меньше процессов и памяти в простое (замер Proof Report)."
+reversibility: "не восстанавливается откатом (D-033): вернуть приложение можно из Microsoft Store или winget; baseline хранит список удалённых пакетов"
+breaks: "Удалённое приложение перестаёт работать; новые пользователи его не получат."
+actions:
+  - id: copilot
+    appx:
+      name: 'Microsoft.Copilot'
+  - id: office-hub
+    appx:
+      name: 'Microsoft.MicrosoftOfficeHub'

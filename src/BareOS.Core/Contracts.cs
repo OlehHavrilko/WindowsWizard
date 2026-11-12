@@ -44,6 +44,16 @@ public interface ITaskAccess
     void SetEnabled(string path, bool enabled);
 }
 
+/// <summary>Доступ к приложениям Appx (UWP/MSIX). Шаблон имени — как в Get-AppxPackage -Name: только буквы, цифры, '.', '_', '-' и '*'.</summary>
+public interface IAppxAccess
+{
+    /// <summary>Полные имена найденных пакетов: установленные для любого пользователя ("installed:...")
+    /// и предустановленные для новых пользователей ("provisioned:..."). Пусто — приложения нет.</summary>
+    IReadOnlyList<string> Find(string namePattern);
+    /// <summary>Удаляет пакеты (для всех пользователей) и записи provisioned. Необратимо: пакет возвращается только из Store/winget.</summary>
+    void Remove(string namePattern);
+}
+
 /// <summary>Запись значения реестра через локальную групповую политику (Registry.pol + gpupdate), когда UCPD
 /// блокирует прямую запись (D-031). Сама защита ОС не снимается — это обходной, а не отключающий путь.</summary>
 public interface IPolicyWriter
@@ -55,24 +65,27 @@ public interface IPolicyWriter
 
 /// <summary>Среда выполнения: всё, что трогает систему. Tasks и Policy необязательны
 /// (null => действия task недоступны / обход UCPD через групповую политику недоступен).</summary>
-public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null, IPolicyWriter? Policy = null);
+public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null, IPolicyWriter? Policy = null, IAppxAccess? Appx = null);
 
 // ===== Декларативное описание твика =====
 
 public enum Stability { Stable, Moderate, Fragile }      // класс устойчивости к обновлениям (D-024)
 public enum Verdict { Core, Standard, Option, Lab }
 
-/// <summary>Одно действие твика. Ровно одно из: Registry, Service или Task.</summary>
+/// <summary>Одно действие твика. Ровно одно из: Registry, Service, Task или Appx.</summary>
 public sealed record TweakAction(
     string Id,
     RegistryTarget? Registry = null,
     ServiceTarget? Service = null,
-    TaskTarget? Task = null);
+    TaskTarget? Task = null,
+    AppxTarget? Appx = null);
 
 public sealed record RegistryTarget(string Path, string Name, RegKind Kind, string Data);
 public sealed record ServiceTarget(string Name, StartType Start);
 /// <summary>Задача планировщика: ожидаемое состояние Enabled. Для Enabled=false отсутствие задачи считается выполненным.</summary>
 public sealed record TaskTarget(string Path, bool Enabled);
+/// <summary>Приложение Appx, которое должно отсутствовать (удалено для всех пользователей и из provisioned). Восстановить из baseline нельзя (D-033).</summary>
+public sealed record AppxTarget(string Name);
 
 /// <summary>Карточка твика (читается из YAML каталога catalog/, ключи camelCase; PARAMETERS §2).
 /// Поля после Actions необязательны.</summary>
@@ -108,7 +121,7 @@ public sealed record Plan(string FormatVersion, string RunId, DateTimeOffset Cre
 
 /// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service/Task заполнено.</summary>
 /// <param name="KeyExisted">Для реестра: существовал ли ключ до apply (если нет — revert удаляет его, когда он пуст).</param>
-public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null, bool? KeyExisted = null);
+public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null, bool? KeyExisted = null, string? AppxPackages = null);
 /// <param name="IsRevertMarker">Снимок, записанный после успешного отката: состояние целей после revert. Граница истории —
 /// PickBaseline не заглядывает за него, поэтому уже откатанный apply не «воскресает» при следующем откате.</param>
 public sealed record Baseline(string FormatVersion, string BaselineId, DateTimeOffset CreatedAt, IReadOnlyList<BaselineEntry> Entries, bool IsRevertMarker = false);

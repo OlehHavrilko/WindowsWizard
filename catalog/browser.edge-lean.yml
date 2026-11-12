@@ -1,0 +1,54 @@
+id: browser.edge-lean
+title: "Microsoft Edge: фоновый режим, Startup Boost и реклама выключены"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Убрать фоновую работу Edge после закрытия, предзапуск, магазинного помощника, рекомендации, боковую панель Copilot и первый запуск. Сам Edge и WebView2 остаются."
+evidence: "Политики Edge: BackgroundModeEnabled = 0, StartupBoostEnabled = 0, HideFirstRunExperience = 1, EdgeShoppingAssistantEnabled = 0, ShowRecommendationsEnabled = 0, HubsSidebarEnabled = 0, PersonalizationReportingEnabled = 0; после закрытия Edge процессов msedge.exe нет (замер Proof Report)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: edge-background
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: BackgroundModeEnabled
+      kind: DWord
+      data: "0"
+  - id: edge-startup-boost
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: StartupBoostEnabled
+      kind: DWord
+      data: "0"
+  - id: edge-first-run
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: HideFirstRunExperience
+      kind: DWord
+      data: "1"
+  - id: edge-shopping
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: EdgeShoppingAssistantEnabled
+      kind: DWord
+      data: "0"
+  - id: edge-recommendations
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: ShowRecommendationsEnabled
+      kind: DWord
+      data: "0"
+  - id: edge-sidebar
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: HubsSidebarEnabled
+      kind: DWord
+      data: "0"
+  - id: edge-personalization
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge'
+      name: PersonalizationReportingEnabled
+      kind: DWord
+      data: "0"

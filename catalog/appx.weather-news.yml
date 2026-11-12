@@ -1,0 +1,19 @@
+id: appx.weather-news
+title: "Погода и Новости (Bing) удалены"
+verdict: Standard
+stability: Stable
+category: appx
+scope: machine
+risk: T3
+status: accepted
+intent: "Удалить предустановленные приложения «Погода» и «Новости» с рекламной лентой."
+evidence: "Get-AppxPackage -AllUsers для Microsoft.BingWeather и Microsoft.BingNews не возвращает пакетов (verify); приложения нет в меню «Пуск»."
+reversibility: "не восстанавливается откатом (D-033): вернуть приложение можно из Microsoft Store или winget; baseline хранит список удалённых пакетов"
+breaks: "Удалённое приложение перестаёт работать; новые пользователи его не получат."
+actions:
+  - id: weather
+    appx:
+      name: 'Microsoft.BingWeather'
+  - id: news
+    appx:
+      name: 'Microsoft.BingNews'

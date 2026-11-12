@@ -20,6 +20,16 @@ public static class TweakCatalog
         "WSLService", "LxssManager", "lxss",
     };
 
+    private static readonly System.Text.RegularExpressions.Regex AppxNameRx = new(@"^[A-Za-z0-9._*-]{3,128}$", System.Text.RegularExpressions.RegexOptions.Compiled);
+    /// <summary>Приложения, которые каталог удалять не вправе (D-033): Store, Xbox-стек, Defender/Security, WSL, winget, среды выполнения, оболочка.</summary>
+    private static readonly string[] ProtectedAppx =
+    {
+        "WindowsStore", "StorePurchaseApp", "Xbox", "GamingApp", "SecHealthUI", "SecurityHealth", "WindowsDefender",
+        "WindowsSubsystemForLinux", "DesktopAppInstaller", "VCLibs", "NET.Native", "UI.Xaml", "WindowsAppRuntime",
+        "WindowsTerminal", "ShellExperienceHost", "StartMenuExperienceHost", "Windows.Search", "CBS", "ImmersiveControlPanel",
+        "AccountsControl", "LockApp", "WebView2", "Edge",
+    };
+
     public static IReadOnlyList<Tweak> LoadDirectory(string dir)
     {
         if (!Directory.Exists(dir)) throw new TweakValidationException($"Каталог не найден: {dir}");
@@ -71,6 +81,11 @@ public static class TweakCatalog
         public RegistryDto? Registry { get; set; }
         public ServiceDto? Service { get; set; }
         public TaskDto? Task { get; set; }
+        public AppxDto? Appx { get; set; }
+    }
+    private sealed class AppxDto
+    {
+        public string? Name { get; set; }
     }
     private sealed class TaskDto
     {
@@ -145,7 +160,8 @@ public static class TweakCatalog
                     throw new TweakValidationException($"{path}: task.state должен быть enabled или disabled, получено '{tk.State}'");
                 task = new TaskTarget(tk.Path ?? "", st == "enabled");
             }
-            return new TweakAction(a.Id ?? "", reg, svc, task);
+            AppxTarget? appx = a.Appx is { } ax ? new AppxTarget(ax.Name ?? "") : null;
+            return new TweakAction(a.Id ?? "", reg, svc, task, appx);
         }).ToList();
         return new Tweak(d.Id ?? "", d.Title ?? "",
             ParseEnum<Verdict>(d.Verdict, "verdict", path), ParseEnum<Stability>(d.Stability, "stability", path),
@@ -185,8 +201,18 @@ public static class TweakCatalog
         {
             if (a == null || string.IsNullOrWhiteSpace(a.Id)) throw new TweakValidationException(P("действие без Id"));
             if (!ids.Add(a.Id)) throw new TweakValidationException(P($"повторяющийся Id действия '{a.Id}'"));
-            if ((a.Registry != null ? 1 : 0) + (a.Service != null ? 1 : 0) + (a.Task != null ? 1 : 0) != 1)
-                throw new TweakValidationException(P($"действие '{a.Id}': должно быть ровно одно из Registry/Service/Task"));
+            if ((a.Registry != null ? 1 : 0) + (a.Service != null ? 1 : 0) + (a.Task != null ? 1 : 0) + (a.Appx != null ? 1 : 0) != 1)
+                throw new TweakValidationException(P($"действие '{a.Id}': должно быть ровно одно из Registry/Service/Task/Appx"));
+            if (a.Appx is { } ap)
+            {
+                if (!AppxNameRx.IsMatch(ap.Name))
+                    throw new TweakValidationException(P($"действие '{a.Id}': имя Appx '{ap.Name}' должно состоять из 3–128 символов [A-Za-z0-9._*-]"));
+                if (ap.Name.Replace("*", "").Length < 3)
+                    throw new TweakValidationException(P($"действие '{a.Id}': шаблон Appx '{ap.Name}' слишком широкий"));
+                foreach (var prot in ProtectedAppx)
+                    if (ap.Name.Contains(prot, StringComparison.OrdinalIgnoreCase) || prot.Contains(ap.Name.Replace("*", ""), StringComparison.OrdinalIgnoreCase))
+                        throw new TweakValidationException(P($"действие '{a.Id}': защищённое приложение '{ap.Name}' (Store/Xbox/Defender/WSL/инфраструктура, D-033)"));
+            }
             if (a.Task is { } tt)
             {
                 if (!tt.Path.StartsWith("\\", StringComparison.Ordinal) || tt.Path.Length < 3 || tt.Path.EndsWith("\\", StringComparison.Ordinal))

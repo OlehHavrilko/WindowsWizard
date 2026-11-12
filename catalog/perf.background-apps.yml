@@ -1,0 +1,19 @@
+id: perf.background-apps
+title: "Фоновая работа UWP-приложений запрещена"
+verdict: Standard
+stability: Stable
+category: latency
+scope: machine
+risk: T2
+status: accepted
+intent: "Запретить приложениям Store работать в фоне: меньше процессов и памяти в простое."
+evidence: "Политика AppPrivacy: LetAppsRunInBackground = 2 (запретить); число фоновых процессов приложений Store и занятая память после входа уменьшаются (замер Proof Report)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Приложения Store не получают уведомления и не обновляют данные в фоне, пока не открыты."
+actions:
+  - id: apps-background-deny
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy'
+      name: LetAppsRunInBackground
+      kind: DWord
+      data: "2"
