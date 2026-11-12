@@ -50,13 +50,14 @@ public sealed class EngineHost
 
     public static bool IsActive(Tweak t) => t.Status is null || t.Status is "accepted" or "verified";
 
-    /// <summary>Appx без отката: вернуть только из Store/winget (D-033).</summary>
-    public static bool IsIrreversible(Tweak t) => t.Actions.Count > 0 && t.Actions.All(a => a.Appx != null);
+    /// <summary>Без отката: Appx (вернуть только из Store/winget, D-033) и одноразовая очистка cleanup (D-035).</summary>
+    public static bool IsIrreversible(Tweak t) => t.Actions.Count > 0 && t.Actions.All(a => a.Appx != null || a.Cleanup != null);
 
     private TweakEngine NewEngine(IRunStore store)
     {
         var registry = new RegistryAccess();
-        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry), new AppxAccess());
+        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry), new AppxAccess(),
+            Features: new FeatureAccess(), Cleanup: new CleanupAccess());
         var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..4];
         return new TweakEngine(env, store, runId);
     }

@@ -199,6 +199,41 @@
               }
             }
           },
+          "feature": {
+            "type": "object",
+            "required": [
+              "name",
+              "state"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._-]{3,128}$"
+              },
+              "state": {
+                "enum": [
+                  "Enabled",
+                  "Disabled"
+                ]
+              }
+            }
+          },
+          "cleanup": {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "ComponentStore",
+                  "Temp"
+                ]
+              }
+            }
+          },
           "file": {
             "type": "object",
             "required": [
@@ -242,6 +277,16 @@
           {
             "required": [
               "file"
+            ]
+          },
+          {
+            "required": [
+              "feature"
+            ]
+          },
+          {
+            "required": [
+              "cleanup"
             ]
           }
         ]

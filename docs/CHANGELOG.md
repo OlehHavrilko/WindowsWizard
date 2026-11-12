@@ -4,6 +4,15 @@
 
 ---
 
+## v0.2-dev — действия feature и cleanup (D-035)
+
+- Действие `feature` (необязательные компоненты Windows через DISM): `IFeatureAccess`/`FeatureAccess`, baseline и откат исходного состояния, отсутствующий компонент считается выполненным, код 3010 не ошибка. Загрузчик каталога запрещает Hyper-V, VirtualMachinePlatform, HypervisorPlatform, WSL, Containers и Windows-Defender.
+- Действие `cleanup` (`ComponentStore`, `Temp`): `ICleanupAccess`/`CleanupAccess`, замер свободного места до и после (`free=<байт>` в `Before`/`After`), откат ничего не делает (`Skipped`), verify всегда `Verified`.
+- Карточки из разбора WinUtil (9 шт.): `privacy.windows-ai` (Recall как компонент, WSAIFabricSvc, AI в Блокноте и Paint), `appx.extra-apps` (Dev Home, StartExperiencesApp, Кино и ТВ, Cross Device), `system.wpbt-off`, `consumer.device-metadata`, `storage.hibernation-off`, `storage.cleanup`, `shell.explorer-home`, `shell.taskbar-endtask`, `shell.settings-lean`. Статус proposed у тех, что ждут проверки на ВМ.
+- `catalog/tweak.schema.json`, `docs/ACTIONS.md`, `docs/DECISIONS.md` (D-035); CLI и Toolbox подключают новые реализации; тесты: разбор вывода DISM, валидация, движок на фейках.
+
+---
+
 ## v0.2-dev — Toolbox (D-034)
 
 - `src/BareOS.Toolbox`: WPF-приложение поверх движка: карточки каталога с переключателями (apply/revert/verify), поиск, «Применить рекомендованное», «Откатить всё», Proof Report (замер до/после, HTML), журнал. Стиль Bare OS.

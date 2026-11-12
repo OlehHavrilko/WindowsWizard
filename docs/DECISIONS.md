@@ -461,3 +461,16 @@
 4. Стиль: палитра `branding/src/palette.json`, знак «b_» с мятным курсором.
 
 **Последствия.** Если позже понадобится WinUI 3, интерфейс заменяется без изменений движка. Проверка на живой системе — прогон на ВМ вместе с остальными карточками.
+
+
+## D-035. Новые действия feature и cleanup
+**Статус:** accepted (2026-11-12; владелец, по разбору твиков WinUtil)
+
+**Контекст.** В разборе WinUtil нашлись твики, которые не выражаются действиями `registry`/`service`/`task`/`appx`/`file`: Recall в Windows 11 24H2+ поставляется как необязательный компонент (DISM optional feature), а очистка хранилища компонентов и временных файлов нужна Proof Report: измеримый эффект «освобождено N байт».
+
+**Решение.**
+1. Действие `feature` (`feature: { name: Recall, state: Disabled }`, `state`: `Enabled` или `Disabled`): чтение и запись через `dism.exe` (`/Get-FeatureInfo /English`, `/Disable-Feature /NoRestart`, `/Enable-Feature /All /NoRestart`); реализация `FeatureAccess` по образцу `AppxAccess`, интерфейс `IFeatureAccess`. Имя компонента ограничено `[A-Za-z0-9._-]`. Baseline хранит исходное состояние, `revert` его возвращает. Компонента нет в сборке — для `Disabled` действие выполнено (как с отсутствующими службами и задачами), verify показывает `<absent>`. Код 3010 (нужна перезагрузка) не ошибка.
+2. Действие `cleanup` (`cleanup: { kind: ComponentStore }` или `{ kind: Temp }`): одноразовое и необратимое. `ComponentStore` = `dism /Online /Cleanup-Image /StartComponentCleanup` без `/ResetBase`; `Temp` = содержимое `%WINDIR%\Temp` и `%TEMP%` текущего пользователя, занятые файлы пропускаются молча. Движок замеряет свободное место на системном диске до и после (`Before`/`After` = `free=<байт>`). `revert` ничего не делает и честно сообщает `Skipped` (по аналогии с appx, D-033); `verify` всегда `Verified`; повторный apply допустим. Интерфейс `ICleanupAccess`, реализация `CleanupAccess`.
+3. Запрет сохраняется: загрузчик каталога отклоняет компоненты, содержащие `Hyper-V`, `Microsoft-Hyper-V`, `VirtualMachinePlatform`, `Microsoft-Windows-Subsystem-Linux`, `HypervisorPlatform`, `Containers`, `Windows-Defender`. Defender, Hyper-V и WSL по-прежнему не трогаем (D-023).
+
+**Последствия.** `BaselineEntry` получил поле `Feature`, `TweakAction` — `Feature` и `Cleanup`, `EngineEnv` — `Features` и `Cleanup` (необязательные). Схема `catalog/tweak.schema.json` и `docs/ACTIONS.md` обновлены. Toolbox считает карточку из одних `cleanup` необратимой, как Appx. Реальный DISM проверяется на ВМ с Windows вместе с остальными карточками; в CI на Linux проходят разбор вывода, валидация и логика движка на фейках.

@@ -1,0 +1,25 @@
+id: shell.taskbar-endtask
+title: "«Завершить задачу» в меню значка на панели задач"
+verdict: Standard
+stability: Stable
+category: convenience
+scope: user
+risk: T1
+status: accepted
+source: "Разбор WinUtil (Chris Titus), твик EndTaskOnTaskbar, 2026-11-12"
+intent: "TaskbarEndTask = 1: в контекстном меню значка программы на панели задач появляется «Завершить задачу», зависшее приложение закрывается без Диспетчера задач. Текущий пользователь и профиль по умолчанию."
+evidence: "Значение Advanced\\TaskbarDeveloperSettings\\TaskbarEndTask = 1 (HKCU, HKDU; verify); пункт виден в меню значка."
+reversibility: "revert по baseline: значение удаляется"
+actions:
+  - id: end-task
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings'
+      name: TaskbarEndTask
+      kind: DWord
+      data: "1"
+  - id: du-end-task
+    registry:
+      path: 'HKDU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings'
+      name: TaskbarEndTask
+      kind: DWord
+      data: "1"

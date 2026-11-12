@@ -22,6 +22,13 @@ public static class TweakCatalog
 
     private static readonly System.Text.RegularExpressions.Regex AppxNameRx = new(@"^[A-Za-z0-9._*-]{3,128}$", System.Text.RegularExpressions.RegexOptions.Compiled);
     /// <summary>Приложения, которые каталог удалять не вправе (D-033): Store, Xbox-стек, Defender/Security, WSL, winget, среды выполнения, оболочка.</summary>
+    private static readonly System.Text.RegularExpressions.Regex FeatureNameRx = new(@"^[A-Za-z0-9._-]{3,128}$", System.Text.RegularExpressions.RegexOptions.Compiled);
+    /// <summary>Компоненты Windows, которые каталог отключать не вправе (D-035): Hyper-V и виртуализация, WSL, контейнеры, Defender. Сравнение по вхождению, без учёта регистра.</summary>
+    private static readonly string[] ForbiddenFeatures =
+    {
+        "Hyper-V", "Microsoft-Hyper-V", "VirtualMachinePlatform", "Microsoft-Windows-Subsystem-Linux", "HypervisorPlatform",
+        "Containers", "Windows-Defender",
+    };
     private static readonly string[] FileDestPrefixes = { "%WINDIR%\\Web\\", "%ProgramData%\\BareOS\\" };
 
     private static readonly string[] ProtectedAppx =
@@ -85,6 +92,17 @@ public static class TweakCatalog
         public TaskDto? Task { get; set; }
         public AppxDto? Appx { get; set; }
         public FileDto? File { get; set; }
+        public FeatureDto? Feature { get; set; }
+        public CleanupDto? Cleanup { get; set; }
+    }
+    private sealed class FeatureDto
+    {
+        public string? Name { get; set; }
+        public string? State { get; set; }   // Enabled | Disabled
+    }
+    private sealed class CleanupDto
+    {
+        public string? Kind { get; set; }    // ComponentStore | Temp
     }
     private sealed class FileDto
     {
@@ -170,7 +188,16 @@ public static class TweakCatalog
             }
             AppxTarget? appx = a.Appx is { } ax ? new AppxTarget(ax.Name ?? "") : null;
             FileTarget? file = a.File is { } fl ? new FileTarget(fl.Source ?? "", fl.Dest ?? "") : null;
-            return new TweakAction(a.Id ?? "", reg, svc, task, appx, file);
+            FeatureTarget? feature = null;
+            if (a.Feature is { } fe)
+            {
+                var st = (fe.State ?? "").Trim().ToLowerInvariant();
+                if (st != "enabled" && st != "disabled")
+                    throw new TweakValidationException($"{path}: feature.state должен быть Enabled или Disabled, получено '{fe.State}'");
+                feature = new FeatureTarget(fe.Name ?? "", st == "enabled");
+            }
+            CleanupTarget? cleanup = a.Cleanup is { } cl ? new CleanupTarget(ParseEnum<CleanupKind>(cl.Kind, "cleanup.kind", path)) : null;
+            return new TweakAction(a.Id ?? "", reg, svc, task, appx, file, feature, cleanup);
         }).ToList();
         return new Tweak(d.Id ?? "", d.Title ?? "",
             ParseEnum<Verdict>(d.Verdict, "verdict", path), ParseEnum<Stability>(d.Stability, "stability", path),
@@ -210,8 +237,19 @@ public static class TweakCatalog
         {
             if (a == null || string.IsNullOrWhiteSpace(a.Id)) throw new TweakValidationException(P("действие без Id"));
             if (!ids.Add(a.Id)) throw new TweakValidationException(P($"повторяющийся Id действия '{a.Id}'"));
-            if ((a.Registry != null ? 1 : 0) + (a.Service != null ? 1 : 0) + (a.Task != null ? 1 : 0) + (a.Appx != null ? 1 : 0) + (a.File != null ? 1 : 0) != 1)
-                throw new TweakValidationException(P($"действие '{a.Id}': должно быть ровно одно из Registry/Service/Task/Appx/File"));
+            if ((a.Registry != null ? 1 : 0) + (a.Service != null ? 1 : 0) + (a.Task != null ? 1 : 0) + (a.Appx != null ? 1 : 0) + (a.File != null ? 1 : 0)
+                + (a.Feature != null ? 1 : 0) + (a.Cleanup != null ? 1 : 0) != 1)
+                throw new TweakValidationException(P($"действие '{a.Id}': должно быть ровно одно из Registry/Service/Task/Appx/File/Feature/Cleanup"));
+            if (a.Feature is { } ft)
+            {
+                if (!FeatureNameRx.IsMatch(ft.Name ?? ""))
+                    throw new TweakValidationException(P($"действие '{a.Id}': имя компонента '{ft.Name}' должно состоять из 3–128 символов [A-Za-z0-9._-]"));
+                foreach (var bad in ForbiddenFeatures)
+                    if ((ft.Name ?? "").Contains(bad, StringComparison.OrdinalIgnoreCase))
+                        throw new TweakValidationException(P($"действие '{a.Id}': запрещённый компонент '{ft.Name}' (Defender/Hyper-V/WSL/виртуализация/контейнеры, D-035)"));
+            }
+            if (a.Cleanup is { } cu && !Enum.IsDefined(cu.Kind))
+                throw new TweakValidationException(P($"действие '{a.Id}': недопустимый вид очистки '{cu.Kind}'"));
             if (a.Appx is { } ap)
             {
                 if (!AppxNameRx.IsMatch(ap.Name))

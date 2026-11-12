@@ -1,0 +1,20 @@
+id: shell.settings-lean
+title: "Параметры: без промо-«Главной» и раздела AI-компонентов"
+verdict: Standard
+stability: Moderate
+category: appearance
+scope: machine
+risk: T1
+status: proposed
+source: "Разбор WinUtil (Chris Titus), твики HideSettingsHome и WindowsAI, 2026-11-12"
+intent: "SettingsPageVisibility = hide:home;aicomponents: Параметры открываются сразу на «Системе», без карточек с рекламой Microsoft 365, OneDrive и Game Pass, и без раздела AI-компонентов. Значение одно на обе страницы, поэтому они в одной карточке."
+evidence: "Политика Explorer\\SettingsPageVisibility = hide:home;aicomponents (verify); в Параметрах нет страниц «Главная» и «AI-компоненты»."
+reversibility: "revert по baseline: значение возвращается к исходному или удаляется"
+breaks: "Если политика SettingsPageVisibility задана администратором, значение перезаписывается."
+actions:
+  - id: settings-hide-pages
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer'
+      name: SettingsPageVisibility
+      kind: String
+      data: "hide:home;aicomponents"

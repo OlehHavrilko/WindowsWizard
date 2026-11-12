@@ -54,6 +54,30 @@ public interface IAppxAccess
     void Remove(string namePattern);
 }
 
+/// <summary>Состояние необязательного компонента Windows (DISM optional feature). Enabled значим только при Exists.
+/// «Ожидает перезагрузки» (Enable/Disable Pending) считается целевым состоянием: Disable Pending = Enabled=false.</summary>
+public sealed record FeatureState(bool Exists, bool Enabled = false);
+
+/// <summary>Доступ к необязательным компонентам Windows (D-035). Имя — только [A-Za-z0-9._-], как у Appx без '*'.</summary>
+public interface IFeatureAccess
+{
+    /// <summary>Exists=false — такого компонента в этой сборке нет.</summary>
+    FeatureState Read(string name);
+    /// <summary>Включает (/Enable-Feature /All /NoRestart) или отключает (/Disable-Feature /NoRestart). Код 3010 (нужна перезагрузка) — не ошибка.</summary>
+    void SetEnabled(string name, bool enabled);
+}
+
+/// <summary>Одноразовая очистка (D-035) и замер свободного места на системном диске.</summary>
+public interface ICleanupAccess
+{
+    /// <summary>Свободное место на системном диске, байт.</summary>
+    long FreeBytes();
+    /// <summary>dism /Online /Cleanup-Image /StartComponentCleanup (без /ResetBase).</summary>
+    void ComponentStore();
+    /// <summary>Содержимое %WINDIR%\Temp и %TEMP% текущего пользователя; занятые файлы пропускаются молча.</summary>
+    void Temp();
+}
+
 /// <summary>Состояние файла: существует ли, SHA-256 содержимого (в верхнем регистре), путь резервной копии (только в baseline).</summary>
 public sealed record FileState(bool Exists, string? Sha256 = null, string? BackupPath = null);
 
@@ -81,21 +105,23 @@ public interface IPolicyWriter
 
 /// <summary>Среда выполнения: всё, что трогает систему. Tasks и Policy необязательны
 /// (null => действия task недоступны / обход UCPD через групповую политику недоступен).</summary>
-public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null, IPolicyWriter? Policy = null, IAppxAccess? Appx = null, IFileAccess? Files = null);
+public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null, IPolicyWriter? Policy = null, IAppxAccess? Appx = null, IFileAccess? Files = null, IFeatureAccess? Features = null, ICleanupAccess? Cleanup = null);
 
 // ===== Декларативное описание твика =====
 
 public enum Stability { Stable, Moderate, Fragile }      // класс устойчивости к обновлениям (D-024)
 public enum Verdict { Core, Standard, Option, Lab }
 
-/// <summary>Одно действие твика. Ровно одно из: Registry, Service, Task, Appx или File.</summary>
+/// <summary>Одно действие твика. Ровно одно из: Registry, Service, Task, Appx, File, Feature или Cleanup.</summary>
 public sealed record TweakAction(
     string Id,
     RegistryTarget? Registry = null,
     ServiceTarget? Service = null,
     TaskTarget? Task = null,
     AppxTarget? Appx = null,
-    FileTarget? File = null);
+    FileTarget? File = null,
+    FeatureTarget? Feature = null,
+    CleanupTarget? Cleanup = null);
 
 public sealed record RegistryTarget(string Path, string Name, RegKind Kind, string Data);
 public sealed record ServiceTarget(string Name, StartType Start);
@@ -105,6 +131,13 @@ public sealed record TaskTarget(string Path, bool Enabled);
 public sealed record AppxTarget(string Name);
 /// <summary>Файл-ресурс, который должен лежать в dest: Source — путь относительно каталога ресурсов, Dest — путь с %ENV%. Откат возвращает прежний файл или удаляет созданный.</summary>
 public sealed record FileTarget(string Source, string Dest);
+
+/// <summary>Необязательный компонент Windows: ожидаемое состояние Enabled. Для Enabled=false отсутствие компонента в сборке считается выполненным (D-035).</summary>
+public sealed record FeatureTarget(string Name, bool Enabled);
+/// <summary>Вид одноразовой очистки (D-035).</summary>
+public enum CleanupKind { ComponentStore, Temp }
+/// <summary>Одноразовая необратимая очистка: apply запускает её всегда, verify всегда Verified, revert ничего не делает.</summary>
+public sealed record CleanupTarget(CleanupKind Kind);
 
 /// <summary>Карточка твика (читается из YAML каталога catalog/, ключи camelCase; PARAMETERS §2).
 /// Поля после Actions необязательны.</summary>
@@ -138,9 +171,9 @@ public enum ActionStatus { Planned, Started, Applied, AlreadyApplied, Failed, Sk
 public sealed record PlanEntry(string TweakId, string ActionId, string Target, string Before, string Expected);
 public sealed record Plan(string FormatVersion, string RunId, DateTimeOffset CreatedAt, IReadOnlyList<PlanEntry> Entries);
 
-/// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service/Task/File заполнено (для Appx — AppxPackages).</summary>
+/// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service/Task/File/Feature заполнено (для Appx — AppxPackages; для Cleanup состояния нет).</summary>
 /// <param name="KeyExisted">Для реестра: существовал ли ключ до apply (если нет — revert удаляет его, когда он пуст).</param>
-public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null, bool? KeyExisted = null, string? AppxPackages = null, FileState? File = null);
+public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null, bool? KeyExisted = null, string? AppxPackages = null, FileState? File = null, FeatureState? Feature = null);
 /// <param name="IsRevertMarker">Снимок, записанный после успешного отката: состояние целей после revert. Граница истории —
 /// PickBaseline не заглядывает за него, поэтому уже откатанный apply не «воскресает» при следующем откате.</param>
 public sealed record Baseline(string FormatVersion, string BaselineId, DateTimeOffset CreatedAt, IReadOnlyList<BaselineEntry> Entries, bool IsRevertMarker = false);

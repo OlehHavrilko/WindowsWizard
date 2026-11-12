@@ -1,0 +1,27 @@
+id: storage.hibernation-off
+title: "Гибернация выключена, hiberfil.sys удаляется"
+verdict: Standard
+stability: Stable
+category: storage
+scope: machine
+risk: T1
+status: proposed
+delay: reboot
+source: "Разбор WinUtil (Chris Titus), твик Hiber, 2026-11-12"
+intent: "HibernateEnabled = 0 и HibernateEnabledDefault = 0 (то же, что powercfg /hibernate off). Быстрый запуск уже выключен (perf.power), поэтому hiberfil.sys на десктопе только занимает место (около 40 % объёма ОЗУ)."
+evidence: "Значения Control\\Power HibernateEnabled = 0 и HibernateEnabledDefault = 0 (verify); после перезагрузки файла C:\\hiberfil.sys нет, свободное место на C: выросло на его размер (Proof Report). Статус proposed до проверки удаления файла на ВМ."
+reversibility: "revert по baseline: значения возвращаются к исходным; hiberfil.sys создаётся заново после перезагрузки"
+breaks: "Нет пункта «Гибернация» и быстрого запуска. На ноутбуке при разряде батареи не будет сохранения сеанса."
+actions:
+  - id: hibernate-off
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Power'
+      name: HibernateEnabled
+      kind: DWord
+      data: "0"
+  - id: hibernate-default-off
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Power'
+      name: HibernateEnabledDefault
+      kind: DWord
+      data: "0"
