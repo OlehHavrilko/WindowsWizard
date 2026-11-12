@@ -18,9 +18,14 @@
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,36,0">
-        <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="30" FontWeight="SemiBold" Text="b" />
-        <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="30" FontWeight="SemiBold" Text="_" Foreground="{StaticResource Signal}" />
-        <TextBlock Text="Bare OS" FontSize="15" Foreground="{StaticResource Stone}" VerticalAlignment="Bottom" Margin="12,0,0,5" />
+        <!-- Знак «b_» (branding/src/mark.svg): ствол, чаша, мятный курсор -->
+        <Viewbox Width="30" Height="30" VerticalAlignment="Center">
+          <Canvas Width="100" Height="100">
+            <Path Stroke="{StaticResource Bone}" StrokeThickness="9" Data="M19.25 9.5V90.5 M19.25 50H39.25A18 18 0 0 1 39.25 86H19.25" />
+            <Rectangle Canvas.Left="63.25" Canvas.Top="83.5" Width="20" Height="7" Fill="{StaticResource Signal}" />
+          </Canvas>
+        </Viewbox>
+        <TextBlock Text="Bare OS" FontSize="15" Foreground="{StaticResource Stone}" VerticalAlignment="Bottom" Margin="12,0,0,3" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
         <RadioButton x:Name="TabParams" Style="{StaticResource TabBtn}" Content="Параметры" IsChecked="True" Checked="Tab_Checked" />

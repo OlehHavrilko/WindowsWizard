@@ -170,3 +170,4 @@
 **Не добавлено (намеренно):** YAML-контент, `playbook.conf`, скрипты, реальные параметры.
 
 **Открытые решения:** D-007 (состав Appx), D-011 (порог измеримости), D-012 (публикация).
+- Бренд B-1: `tools/branding/render.js` (иконки, плитки, надпись `bareOS_`, 120×120 BMP для OEM) → `branding/out/`; знак «b_» векторно в шапке Toolbox, новая `bareos.ico`, токены Paper/Ash/SignalDeep в Theme.xaml.
