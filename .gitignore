@@ -20,3 +20,5 @@ desktop.ini
 .vscode/settings.json
 bin/
 obj/
+*.whl
+__pycache__/
