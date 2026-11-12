@@ -1,0 +1,6 @@
+---
+title: Применение параметров
+description: bareos apply
+actions:
+  - !writeStatus: {status: 'Применение параметров'}
+  - !run: {exeDir: true, exe: 'bareos-run.cmd', args: 'apply'}

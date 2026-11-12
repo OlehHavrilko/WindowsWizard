@@ -4,6 +4,13 @@
 
 ---
 
+## v0.2-dev — playbook-обёртка
+
+- `Playbook/`: `playbook.conf` (UniqueId `ffeab6fe-1e87-4d06-930f-06f0fdb62bd5`, 26300), `main.yml` и задачи `plan → apply → verify` через `bareos-run.cmd`, `playbook.png`.
+- `tools/validate.py`, `tools/package.py` (7z, пароль `malte`; кладёт `bareos.exe` и `catalog/` в `Executables/`). Прогон через AME Wizard на ВМ: не проверен.
+
+---
+
 ## v0.1-dev — явное отключение UCPD флагом (D-032)
 
 - По прямому указанию владельца (после того как D-031 не обошла защиту на ВМ): `UcpdGuard.DisableProtectionTweak()` — отдельный, не каталожный твик (служба `UCPD` → `Disabled`, задача `UCPD velocity` → выключена), как делает AtlasOS.

@@ -1,0 +1,6 @@
+---
+title: Предпросмотр изменений
+description: bareos plan
+actions:
+  - !writeStatus: {status: 'Предпросмотр изменений'}
+  - !run: {exeDir: true, exe: 'bareos-run.cmd', args: 'plan'}
