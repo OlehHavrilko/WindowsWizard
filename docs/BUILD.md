@@ -95,3 +95,16 @@
 1. Отозвать файл и контрольную сумму со страницы.
 2. Выпустить версию с исправлением; не перезаписывать архив под тем же номером.
 3. Запись в `CHANGELOG` с описанием дефекта и списком затронутых сборок.
+
+## 7. Запуск через AME CLI (проверено на ВМ, сборка 26300.9974)
+
+`TrustedUninstaller.CLI.exe` 0.8.4 из cmd от администратора, плейбук должен быть распакован (7-zip, пароль `malte`):
+
+```
+TrustedUninstaller.CLI.exe "<папка плейбука>" default
+```
+
+- Второй аргумент (список опций) обязателен: без него CLI падает на разборе `String[]`.
+- В плейбуке должен быть `options.txt` (пустой): без него CLI падает с `NullReferenceException`, пока в `playbook.conf` нет `FeaturePages`.
+- CLI проверяет только `Internet`, `UCPDDisabled` и `Defender*`; `NoPendingUpdates` игнорирует (живой AME Wizard проверяет).
+- Результат: `Playbook completed successfully`, затем `bareos verify` — 16/16 `Verified`, повторный apply — 16 `AlreadyApplied`, `revert` возвращает исходное состояние. Живой AME Wizard (GUI) не проверялся.
