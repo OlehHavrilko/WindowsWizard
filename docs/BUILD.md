@@ -98,7 +98,7 @@
 
 ## 7. Запуск через AME CLI (проверено на ВМ, сборка 26300.9974)
 
-`TrustedUninstaller.CLI.exe` 0.8.4 из cmd от администратора, плейбук должен быть распакован (пароль `malte`):
+`TrustedUninstaller.CLI.exe` 0.8.4 из cmd от администратора, плейбук должен быть распакован (`unzip -P malte` или 7-Zip, пароль `malte`):
 
 ```
 TrustedUninstaller.CLI.exe "<папка плейбука>" default
