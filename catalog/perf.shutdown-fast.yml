@@ -1,0 +1,19 @@
+id: perf.shutdown-fast
+title: "Быстрое завершение работы: таймауты служб и приложений сокращены"
+verdict: Standard
+stability: Stable
+category: latency
+scope: machine
+risk: T1
+status: accepted
+intent: "WaitToKillServiceTimeout = 2000 мс, HungAppTimeout = 2000 мс, AutoEndTasks = 1: зависшие службы и приложения не задерживают выключение."
+evidence: "Значения Control\\WaitToKillServiceTimeout и Desktop-политик совпадают с каталогом; время выключения (замер вручную)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Служба, которой нужно больше 2 секунд на сохранение состояния, будет завершена принудительно."
+actions:
+  - id: kill-service
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control'
+      name: WaitToKillServiceTimeout
+      kind: String
+      data: "2000"

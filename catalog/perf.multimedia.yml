@@ -1,0 +1,48 @@
+id: perf.multimedia
+title: "Мультимедийный планировщик: игровой приоритет и без троттлинга сети"
+verdict: Standard
+stability: Moderate
+category: latency
+scope: machine
+risk: T2
+status: accepted
+intent: "SystemResponsiveness = 10, NetworkThrottlingIndex = 0xFFFFFFFF (отключить троттлинг сетевых пакетов при мультимедиа), игровым задачам MMCSS — приоритет GPU 8, CPU 6, категория High."
+evidence: "Значения SystemProfile и SystemProfile\\Tasks\\Games совпадают с каталогом (verify)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: responsiveness
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile'
+      name: SystemResponsiveness
+      kind: DWord
+      data: "10"
+  - id: net-throttling
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile'
+      name: NetworkThrottlingIndex
+      kind: DWord
+      data: "4294967295"
+  - id: games-gpu
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'
+      name: GPU Priority
+      kind: DWord
+      data: "8"
+  - id: games-prio
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'
+      name: Priority
+      kind: DWord
+      data: "6"
+  - id: games-category
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'
+      name: Scheduling Category
+      kind: String
+      data: "High"
+  - id: games-sfio
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games'
+      name: SFIO Priority
+      kind: String
+      data: "High"

@@ -17,6 +17,7 @@
 - Действие `appx` (удаление пакетов для всех пользователей и из provisioned), `AppxAccess` через Windows PowerShell, защищённый список (Store/Xbox/Defender/WSL/winget/среды выполнения).
 - Каталог 25 карточек: реклама Spotlight, поиск без веба и Cortana, диагностика, фоновые приложения, Edge без фонового режима, лишние службы, партнёрские Appx; `onedrive.remove` как proposed. Отсутствие службы при `Disabled` считается выполненным.
 - Каталог 29 карточек: добавлены `shell.start-suggestions`, `perf.gamedvr`, `svc.unused-extra`, `task.background-extra`.
+- Каталог 39 карточек: производительность по образцу AtlasOS/ReviOS — планировщик CPU, MMCSS, питание, QoS, быстрое выключение, NTFS; спорные (таймер, DisablePagingExecutive, Prefetch, HAGS) — `proposed`, включаются через `--only`.
 - Proof Report (F-01): команды `bareos measure` и `bareos proof` (процессы, память, Appx, службы с автозапуском, автозапуск, размер WindowsApps; текст и HTML), задачи плейбука `05-measure-before` и `95-proof`; отчёт в `%ProgramData%\BareOS\proof\proof.html`.
 - Карточки `appx.copilot`, `appx.widgets`, `appx.weather-news`, `appx.consumer-apps`; откат Appx не восстанавливает и говорит об этом явно.
 

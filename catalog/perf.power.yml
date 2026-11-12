@@ -1,0 +1,25 @@
+id: perf.power
+title: "Питание: без троттлинга процессов и без гибридной загрузки"
+verdict: Standard
+stability: Moderate
+category: latency
+scope: machine
+risk: T2
+status: accepted
+intent: "PowerThrottlingOff = 1 (выключить Power Throttling), HiberbootEnabled = 0 (быстрый запуск выключен: полноценное завершение работы и холодная загрузка, чище драйверы)."
+evidence: "Значения PowerThrottling\\PowerThrottlingOff = 1 и Session Manager\\Power\\HiberbootEnabled = 0."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Загрузка после завершения работы чуть дольше (нет гибернации ядра); на ноутбуке больше расход батареи."
+actions:
+  - id: power-throttling-off
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling'
+      name: PowerThrottlingOff
+      kind: DWord
+      data: "1"
+  - id: fast-startup-off
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power'
+      name: HiberbootEnabled
+      kind: DWord
+      data: "0"

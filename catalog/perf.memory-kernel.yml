@@ -1,0 +1,19 @@
+id: perf.memory-kernel
+title: "Память: ядро и драйверы остаются в ОЗУ"
+verdict: Standard
+stability: Moderate
+category: memory
+scope: machine
+risk: T2
+status: proposed
+intent: "DisablePagingExecutive = 1: код ядра и драйверов не выгружается в файл подкачки. Имеет смысл от 16 ГБ ОЗУ."
+evidence: "Значение Memory Management\\DisablePagingExecutive = 1; занятая память в простое (замер Proof Report, растёт на пару сотен МБ)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "На системах с малым объёмом ОЗУ даёт нехватку памяти."
+actions:
+  - id: no-paging-exec
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management'
+      name: DisablePagingExecutive
+      kind: DWord
+      data: "1"
