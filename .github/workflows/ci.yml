@@ -24,6 +24,8 @@ jobs:
       - name: Publish Toolbox (WPF, self-contained single-file)
         run: dotnet publish src/BareOS.Toolbox -c Release -r win-x64 -o publish-toolbox
       - name: Сборка .apbx (плейбук + движок + Toolbox)
+        env:
+          PYTHONUTF8: '1'
         run: python tools/package.py --exe publish/bareos.exe --toolbox publish-toolbox/BareOS-Toolbox.exe --out dist
       - uses: actions/upload-artifact@v4
         with:
