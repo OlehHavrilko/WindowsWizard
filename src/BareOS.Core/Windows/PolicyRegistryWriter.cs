@@ -25,7 +25,9 @@ public sealed class PolicyRegistryWriter : IPolicyWriter
         var (machine, sub) = SplitHive(path);
         string polPath = PolFilePath(machine);
         Directory.CreateDirectory(Path.GetDirectoryName(polPath)!);
-        var entries = File.Exists(polPath) ? PRegFile.Parse(File.ReadAllBytes(polPath)).ToList() : new List<PRegFile.Entry>();
+        bool existedBefore = File.Exists(polPath);
+        byte[]? originalBytes = existedBefore ? File.ReadAllBytes(polPath) : null;
+        var entries = existedBefore ? PRegFile.Parse(originalBytes!).ToList() : new List<PRegFile.Entry>();
         entries.RemoveAll(e => e.Key.Equals(sub, StringComparison.OrdinalIgnoreCase)
             && (e.Value.Equals(name, StringComparison.OrdinalIgnoreCase)
                 || e.Value.Equals(DeleteMarker(name), StringComparison.OrdinalIgnoreCase)));
@@ -33,7 +35,26 @@ public sealed class PolicyRegistryWriter : IPolicyWriter
         File.WriteAllBytes(polPath, PRegFile.Serialize(entries));
 
         _runGpUpdate(machine);
-        try { return Same(_registry.Read(path, name), value); } catch { return false; }
+        bool ok;
+        try { ok = Same(_registry.Read(path, name), value); } catch { ok = false; }
+        if (!ok)
+        {
+            // Политика не применилась (сам UCPD или gpsvc отказал на защищённом ключе): не оставляем в Registry.pol
+            // запись, которая ничего не делает, но выглядит как применённая политика.
+            RevertPolFile(polPath, existedBefore, originalBytes);
+            _runGpUpdate(machine);
+        }
+        return ok;
+    }
+
+    private static void RevertPolFile(string polPath, bool existedBefore, byte[]? originalBytes)
+    {
+        try
+        {
+            if (existedBefore) File.WriteAllBytes(polPath, originalBytes!);
+            else File.Delete(polPath);
+        }
+        catch { /* best-effort: неудачная запись не должна скрывать исходный отказ BlockedByOS */ }
     }
 
     private static string DeleteMarker(string name) => "**del." + name;
