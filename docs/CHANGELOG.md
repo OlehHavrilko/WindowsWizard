@@ -4,6 +4,15 @@
 
 ---
 
+## v0.1-dev — обход UCPD через групповую политику (D-031)
+
+- По прямому указанию владельца (после обзора AtlasOS/Meridian/Winhance/0Ai) отменена часть D-030 «не обходим»: при `BlockedByOS` движок пробует записать значение через локальную групповую политику (`Registry.pol` + `gpupdate /force`), не отключая саму защиту ОС. Реализация: `IPolicyWriter`/`PolicyRegistryWriter`, чистый формат PReg — `PRegFile` (без Windows, тестируется отдельно).
+- Если обход не сработал — прежнее поведение: `BlockedByOS`, код не меняется.
+- Отключение самой службы UCPD осталось нереализованным заделом (отдельный флаг понадобится позже, D-031 п.3).
+- Тесты: `UcpdTests` (фолбэк applies/fails/not-tried, revert через политику), `PRegFileTests` (round-trip формата).
+
+---
+
 ## v0.1-dev — блокировка UCPD (D-030)
 
 - Новый статус результата `BlockedByOS` (рядом с `Failed`): отказ «доступ запрещён» при записи/удалении в ключе из списка `UcpdGuard.ProtectedKeys` (Dsh, Windows Feeds\EnableFeeds, NandI, Explorer\Advanced TaskbarDa), когда служба UCPD запущена (не читается — решает ключ). Код выхода не меняется: apply/revert/verify дают 0; verify показывает n/a с причиной; пустой ключ, не удалённый из-за UCPD, — предупреждение при статусе `Reverted`.

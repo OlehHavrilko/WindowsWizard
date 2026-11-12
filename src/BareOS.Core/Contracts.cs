@@ -44,8 +44,18 @@ public interface ITaskAccess
     void SetEnabled(string path, bool enabled);
 }
 
-/// <summary>Среда выполнения: всё, что трогает систему. Tasks необязателен (null => действия task недоступны).</summary>
-public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null);
+/// <summary>Запись значения реестра через локальную групповую политику (Registry.pol + gpupdate), когда UCPD
+/// блокирует прямую запись (D-031). Сама защита ОС не снимается — это обходной, а не отключающий путь.</summary>
+public interface IPolicyWriter
+{
+    /// <summary>value.Exists=false — снять значение через политику (маркер удаления). Возвращает true, если после
+    /// gpupdate текущее значение реестра стало ожидаемым; false не бросает (вызывающий сообщает BlockedByOS).</summary>
+    bool TrySet(string path, string name, RegValue value);
+}
+
+/// <summary>Среда выполнения: всё, что трогает систему. Tasks и Policy необязательны
+/// (null => действия task недоступны / обход UCPD через групповую политику недоступен).</summary>
+public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null, IPolicyWriter? Policy = null);
 
 // ===== Декларативное описание твика =====
 
