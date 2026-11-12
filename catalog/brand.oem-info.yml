@@ -1,0 +1,30 @@
+id: brand.oem-info
+title: "Сведения о системе: Bare OS в Параметры → О системе"
+verdict: Standard
+stability: Stable
+category: appearance
+scope: machine
+risk: T1
+status: accepted
+intent: "Manufacturer = Bare OS, SupportURL = адрес репозитория, Model = Bare OS 26H2. Видимый след в «Параметры → Система → О системе»; значения возвращаются откатом."
+evidence: "Значения OEMInformation Manufacturer, Model, SupportURL совпадают с каталогом; видно в «О системе» (verify и визуально)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: oem-manufacturer
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation'
+      name: Manufacturer
+      kind: String
+      data: "Bare OS"
+  - id: oem-model
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation'
+      name: Model
+      kind: String
+      data: "Bare OS 26H2"
+  - id: oem-support-url
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation'
+      name: SupportURL
+      kind: String
+      data: "https://github.com/OlehHavrilko/WindowsWizard"

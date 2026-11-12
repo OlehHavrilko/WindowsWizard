@@ -1,0 +1,36 @@
+id: privacy.compat-ceip
+title: "Инвентаризация программ, запись действий и CEIP выключены"
+verdict: Standard
+stability: Stable
+category: privacy
+scope: machine
+risk: T1
+status: accepted
+intent: "Выключить сбор списка установленных программ (AppCompat Inventory), запись шагов (Steps Recorder, AITEnable) и программу улучшения (SQM CEIP)."
+evidence: "Политики AppCompat DisableInventory = 1, DisableUAR = 1, AITEnable = 0, SQMClient CEIPEnable = 0; процессы инвентаризации не запускаются (verify)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: inventory
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat'
+      name: DisableInventory
+      kind: DWord
+      data: "1"
+  - id: uar
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat'
+      name: DisableUAR
+      kind: DWord
+      data: "1"
+  - id: ait
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat'
+      name: AITEnable
+      kind: DWord
+      data: "0"
+  - id: ceip
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\SQMClient\Windows'
+      name: CEIPEnable
+      kind: DWord
+      data: "0"
