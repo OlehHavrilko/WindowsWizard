@@ -82,18 +82,20 @@ public sealed class FakeAppx : IAppxAccess
     public List<string> Removed = new();
     public Func<string, bool>? FailWhen;
 
+    private static string Name(string full) { var i = full.IndexOf('_'); return i < 0 ? full : full[..i]; }
+
     private static bool Like(string name, string pattern)
         => System.Text.RegularExpressions.Regex.IsMatch(name, "^" + System.Text.RegularExpressions.Regex.Escape(pattern).Replace("\\*", ".*") + "$",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
     public IReadOnlyList<string> Find(string namePattern)
-        => Installed.Where(n => Like(n, namePattern)).Select(n => "installed:" + n).ToList();
+        => Installed.Where(n => Like(Name(n), namePattern)).Select(n => "installed:" + n).ToList();
 
     public void Remove(string namePattern)
     {
         if (FailWhen?.Invoke(namePattern) == true) throw new IOException("injected appx failure " + namePattern);
         Removed.Add(namePattern);
-        Installed.RemoveAll(n => Like(n, namePattern));
+        Installed.RemoveAll(n => Like(Name(n), namePattern));
     }
 }
 
