@@ -6,9 +6,15 @@
   <Color x:Key="BoneC">#ECEAE4</Color>
   <Color x:Key="StoneC">#8F8D87</Color>
   <Color x:Key="SignalC">#3DDC97</Color>
+  <Color x:Key="PaperC">#F4F2EC</Color>
+  <Color x:Key="AshC">#5E5C57</Color>
+  <Color x:Key="SignalDeepC">#127A50</Color>
   <Color x:Key="EmberC">#FFB547</Color>
   <Color x:Key="HexC">#FF5A6E</Color>
   <SolidColorBrush x:Key="Graphite" Color="{StaticResource GraphiteC}" />
+  <SolidColorBrush x:Key="Paper" Color="{StaticResource PaperC}" />
+  <SolidColorBrush x:Key="Ash" Color="{StaticResource AshC}" />
+  <SolidColorBrush x:Key="SignalDeep" Color="{StaticResource SignalDeepC}" />
   <SolidColorBrush x:Key="Slate" Color="{StaticResource SlateC}" />
   <SolidColorBrush x:Key="Raised" Color="#23262A" />
   <SolidColorBrush x:Key="Line" Color="#2A2D31" />
