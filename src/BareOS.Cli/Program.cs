@@ -16,6 +16,8 @@ public static class Program
           --only <id,id>    выполнить только перечисленные твики (в т. ч. proposed; без --only берутся accepted/verified)
           --run <id|latest> (report) прогон для отчёта, по умолчанию latest
           --json            вывод в JSON
+          --allow-ucpd-disable  (apply/revert) отключить саму защиту UCPD (служба + задача velocity), а не
+                            обходить её (D-032); требует перезагрузки, чтобы вступить в силу; по умолчанию выключен
         validate — проверить каталог карточек и выйти (CI).
         Код выхода: 0 — всё в порядке (в т. ч. BlockedByOS — заблокировано ОС (UCPD)), 1 — есть проблемы, 2 — ошибка использования, валидации или среды (нет прав, замок занят).
         """;
@@ -60,6 +62,7 @@ public static class Program
         string dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BareOS", "runs");
         HashSet<string>? only = null;
         bool json = false;
+        bool allowUcpdDisable = false;
         string runArg = "latest";
 
         for (int i = 1; i < args.Length; i++)
@@ -74,6 +77,7 @@ public static class Program
                     break;
                 case "--run": if (!TryNext(args, ref i, out runArg!)) return Fail("--run требует значение"); break;
                 case "--json": json = true; break;
+                case "--allow-ucpd-disable": allowUcpdDisable = true; break;
                 default: return Fail($"Неизвестный аргумент: {args[i]}\n{Usage}");
             }
         }
@@ -108,6 +112,15 @@ public static class Program
             if (excluded.Count > 0) Console.Error.WriteLine($"Пропущены карточки со статусом proposed/rejected: {string.Join(", ", excluded)}");
             tweaks = tweaks.Where(IsActive).ToList();
         }
+        if (allowUcpdDisable && command is "apply" or "revert")
+        {
+            // apply: отключение UCPD должно выполниться первым, чтобы прямая запись защищённых ключей могла пройти
+            // (после перезагрузки). revert: Revert() сам переворачивает порядок действий, поэтому "первым" здесь
+            // означает "последним при откате" — значения защищённых ключей восстанавливаются, пока защита ещё снята.
+            tweaks = new[] { UcpdGuard.DisableProtectionTweak() }.Concat(tweaks).ToList();
+            Console.Error.WriteLine("--allow-ucpd-disable: защита UCPD будет отключена целиком (D-032), не только обойдена (D-031). Требуется перезагрузка, чтобы это вступило в силу.");
+        }
+
         if (tweaks.Count == 0) return Fail("Нет твиков для выполнения.");
 
         if (command is "apply" or "revert" && !IsAdministrator())
@@ -192,7 +205,8 @@ public static class Program
         foreach (var e in r.Entries.Where(e => e.Error is not null))
             Console.WriteLine($"  ! {e.TweakId}/{e.ActionId}: {e.Error}");
         if (r.Entries.Any(e => e.Status == ActionStatus.BlockedByOS))
-            Console.WriteLine($"  Примечание: BlockedByOS — {UcpdGuard.Reason}. Это не ошибка Bare OS и не влияет на код выхода; UCPD не отключается и не обходится (D-030).");
+            Console.WriteLine($"  Примечание: BlockedByOS — {UcpdGuard.Reason}. Это не ошибка Bare OS и не влияет на код выхода;"
+                + " Bare OS пробует обход через групповую политику (D-031), полностью отключить защиту — флагом --allow-ucpd-disable (D-032).");
     }
 
     private static void PrintTable(string[] headers, IEnumerable<string[]> rows)

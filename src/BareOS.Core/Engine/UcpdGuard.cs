@@ -67,6 +67,33 @@ public static class UcpdGuard
 
     public static string Explain(string path, string name, string? detail = null)
         => $"{Reason}: драйвер защиты UCPD не даёт менять {path}\\{name}. Bare OS пробует обход через локальную"
-           + $" групповую политику (D-031), саму защиту ОС не отключает (D-030)."
+           + $" групповую политику (D-031); полностью отключить защиту можно явным флагом --allow-ucpd-disable (D-032)."
            + (string.IsNullOrEmpty(detail) ? "" : " " + detail);
+
+    /// <summary>Задача планировщика, которая переводит службу UCPD на автозапуск при каждой загрузке (замечено на ВМ:
+    /// до её срабатывания UCPD не блокирует, после — блокирует). Отключается вместе со службой (D-032).</summary>
+    public const string VelocityTask = @"\Microsoft\Windows\AppxDeploymentClient\UCPD velocity";
+
+    /// <summary>Явный, не входящий в каталог твик: отключает саму защиту UCPD (служба + задача velocity),
+    /// а не обходит её (ср. D-031 — обход через групповую политику). Включается только флагом CLI
+    /// --allow-ucpd-disable (по умолчанию выключен, D-032; отменяет для этого случая «не отключаем» из D-030).
+    /// Драйвер уже загружен к моменту apply, поэтому отключение вступает в силу только после перезагрузки —
+    /// до неё защищённые ключи остаются BlockedByOS, как и раньше. CLI подставляет этот твик первым при apply
+    /// (и последним при revert — восстановленные значения защищённых ключей пишутся, пока защита ещё снята).</summary>
+    public static Tweak DisableProtectionTweak() => new(
+        "ucpd.disable-protection",
+        "Отключение защиты UCPD (--allow-ucpd-disable)",
+        Verdict.Lab, Stability.Fragile,
+        "Снимает защиту UCPD целиком, чтобы карточки с защищёнными ключами (напр. shell.widgets) применялись без обхода через политику.",
+        "Служба UCPD: StartType=Disabled; задача UCPD velocity: Enabled=false. Требует перезагрузки, чтобы вступить в силу.",
+        new TweakAction[]
+        {
+            new("service", Service: new ServiceTarget(ServiceName, StartType.Disabled)),
+            new("task", Task: new TaskTarget(VelocityTask, false)),
+        },
+        Risk: "T4",
+        Reversibility: "revert включает службу и задачу обратно; защита возвращается после следующей перезагрузки",
+        Delay: "reboot",
+        Source: "AtlasOS отключает UCPD так же; D-032 — по прямому указанию владельца",
+        Status: "proposed");
 }
