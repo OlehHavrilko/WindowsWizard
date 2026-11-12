@@ -1,0 +1,19 @@
+id: perf.hags
+title: "Аппаратное планирование GPU включено"
+verdict: Standard
+stability: Moderate
+category: latency
+scope: machine
+risk: T2
+status: proposed
+intent: "HwSchMode = 2: планировщик видеопамяти переходит на GPU (нужны видеокарта и драйвер с поддержкой; требуется перезагрузка). Снижает нагрузку на CPU и задержку в играх."
+evidence: "Значение GraphicsDrivers\\HwSchMode = 2; в Параметрах включено «Планирование графического процессора с аппаратным ускорением»."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "На части видеокарт и драйверов вызывает артефакты или падения."
+actions:
+  - id: hw-sch
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers'
+      name: HwSchMode
+      kind: DWord
+      data: "2"

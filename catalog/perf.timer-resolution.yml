@@ -1,0 +1,19 @@
+id: perf.timer-resolution
+title: "Таймер: запросы разрешения таймера действуют глобально"
+verdict: Standard
+stability: Moderate
+category: latency
+scope: machine
+risk: T2
+status: proposed
+intent: "GlobalTimerResolutionRequests = 1 (Win11 21H2+): приложение, запросившее высокое разрешение таймера, действует на всю систему, как до Windows 10 2004. Нужно для игр и аудио с точными таймерами."
+evidence: "Значение GlobalTimerResolutionRequests = 1 в Session Manager\\kernel; задержка таймера (замер timer resolution — вручную)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Небольшой рост энергопотребления на ноутбуке при приложениях с высоким разрешением таймера."
+actions:
+  - id: global-timer
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel'
+      name: GlobalTimerResolutionRequests
+      kind: DWord
+      data: "1"

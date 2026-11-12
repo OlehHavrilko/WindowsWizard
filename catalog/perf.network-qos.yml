@@ -1,0 +1,18 @@
+id: perf.network-qos
+title: "Сеть: резерв полосы QoS снят"
+verdict: Standard
+stability: Stable
+category: network
+scope: machine
+risk: T1
+status: accepted
+intent: "NonBestEffortLimit = 0: Windows не резервирует часть канала под QoS-трафик, вся полоса доступна приложениям."
+evidence: "Политика Psched\\NonBestEffortLimit = 0 (verify); скорость канала без резерва (измеряется вручную)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: qos-reserve
+    registry:
+      path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched'
+      name: NonBestEffortLimit
+      kind: DWord
+      data: "0"

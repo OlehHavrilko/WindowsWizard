@@ -4,6 +4,10 @@ import re, sys, uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+for _s in (sys.stdout, sys.stderr):
+    try: _s.reconfigure(encoding='utf-8')
+    except Exception: pass
+
 root = Path(__file__).resolve().parent.parent / "Playbook"
 errors = []
 def err(m): errors.append(m)

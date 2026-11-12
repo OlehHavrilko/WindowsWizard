@@ -1,0 +1,19 @@
+id: perf.cpu-scheduling
+title: "Планировщик CPU: приоритет активного окна"
+verdict: Standard
+stability: Stable
+category: latency
+scope: machine
+risk: T1
+status: accepted
+intent: "Win32PrioritySeparation = 38 (0x26): короткие фиксированные кванты, приоритет окна на переднем плане. Так делают AtlasOS и ReviOS для отзывчивости интерфейса и игр."
+evidence: "Значение Win32PrioritySeparation = 38; отзывчивость переднего плана под нагрузкой (замер Proof Report, задержка ввода — вручную)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "При фоновой нагрузке (рендер, архивация) фоновые задачи получают меньше процессорного времени."
+actions:
+  - id: prio-separation
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl'
+      name: Win32PrioritySeparation
+      kind: DWord
+      data: "38"

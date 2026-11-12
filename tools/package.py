@@ -12,6 +12,10 @@ import argparse, hashlib, os, shutil, struct, subprocess, sys, tempfile, time, z
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+for _s in (sys.stdout, sys.stderr):
+    try: _s.reconfigure(encoding='utf-8')
+    except Exception: pass
+
 PASSWORD = b"malte"
 
 _CRC = [0] * 256

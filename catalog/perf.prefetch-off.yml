@@ -1,0 +1,25 @@
+id: perf.prefetch-off
+title: "Prefetch и Superfetch для NVMe-дисков отключены"
+verdict: Standard
+stability: Moderate
+category: storage
+scope: machine
+risk: T2
+status: proposed
+intent: "EnablePrefetcher = 0 и EnableSuperfetch = 0: на быстрых NVMe-накопителях предзагрузка не ускоряет запуск, а лишь нагружает диск и память."
+evidence: "Значения PrefetchParameters = 0; запись в Prefetch и нагрузка SysMain в простое снижаются (замер вручную)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "На HDD запуск приложений становится заметно медленнее."
+actions:
+  - id: prefetcher
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters'
+      name: EnablePrefetcher
+      kind: DWord
+      data: "0"
+  - id: superfetch
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters'
+      name: EnableSuperfetch
+      kind: DWord
+      data: "0"

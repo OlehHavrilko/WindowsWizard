@@ -1,0 +1,25 @@
+id: perf.ntfs-tuning
+title: "NTFS: без обновления времени доступа и без коротких имён 8.3"
+verdict: Standard
+stability: Moderate
+category: storage
+scope: machine
+risk: T2
+status: accepted
+intent: "NtfsDisableLastAccessUpdate = 0x80000001 (системный режим: время последнего доступа не пишется), NtfsDisable8dot3NameCreation = 1. Меньше записей метаданных на диск."
+evidence: "Значения FileSystem\\NtfsDisableLastAccessUpdate и NtfsDisable8dot3NameCreation совпадают с каталогом; число записей метаданных падает (замер вручную)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+breaks: "Старые 16-битные установщики, которым нужны короткие имена, могут не работать; некоторые утилиты бэкапа используют время доступа."
+actions:
+  - id: last-access
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem'
+      name: NtfsDisableLastAccessUpdate
+      kind: DWord
+      data: "2147483649"
+  - id: no-8dot3
+    registry:
+      path: 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem'
+      name: NtfsDisable8dot3NameCreation
+      kind: DWord
+      data: "1"
