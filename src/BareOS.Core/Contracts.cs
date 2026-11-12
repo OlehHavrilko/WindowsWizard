@@ -54,6 +54,22 @@ public interface IAppxAccess
     void Remove(string namePattern);
 }
 
+/// <summary>Состояние файла: существует ли, SHA-256 содержимого (в верхнем регистре), путь резервной копии (только в baseline).</summary>
+public sealed record FileState(bool Exists, string? Sha256 = null, string? BackupPath = null);
+
+/// <summary>Доступ к файлам для действия file (копирование ресурса с откатом). Пути dest могут содержать %ENV%.</summary>
+public interface IFileAccess
+{
+    FileState Read(string dest);
+    /// <summary>SHA-256 ресурса (путь относительно каталога ресурсов); бросает, если ресурса нет.</summary>
+    string SourceHash(string source);
+    /// <summary>Копирует существующий dest в резервную копию и возвращает её путь.</summary>
+    string Backup(string dest, string tag);
+    void Copy(string source, string dest);
+    void Restore(string backupPath, string dest);
+    void Delete(string dest);
+}
+
 /// <summary>Запись значения реестра через локальную групповую политику (Registry.pol + gpupdate), когда UCPD
 /// блокирует прямую запись (D-031). Сама защита ОС не снимается — это обходной, а не отключающий путь.</summary>
 public interface IPolicyWriter
@@ -65,20 +81,21 @@ public interface IPolicyWriter
 
 /// <summary>Среда выполнения: всё, что трогает систему. Tasks и Policy необязательны
 /// (null => действия task недоступны / обход UCPD через групповую политику недоступен).</summary>
-public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null, IPolicyWriter? Policy = null, IAppxAccess? Appx = null);
+public sealed record EngineEnv(IRegistryAccess Registry, IServiceAccess Services, Func<DateTimeOffset> Now, ITaskAccess? Tasks = null, IPolicyWriter? Policy = null, IAppxAccess? Appx = null, IFileAccess? Files = null);
 
 // ===== Декларативное описание твика =====
 
 public enum Stability { Stable, Moderate, Fragile }      // класс устойчивости к обновлениям (D-024)
 public enum Verdict { Core, Standard, Option, Lab }
 
-/// <summary>Одно действие твика. Ровно одно из: Registry, Service, Task или Appx.</summary>
+/// <summary>Одно действие твика. Ровно одно из: Registry, Service, Task, Appx или File.</summary>
 public sealed record TweakAction(
     string Id,
     RegistryTarget? Registry = null,
     ServiceTarget? Service = null,
     TaskTarget? Task = null,
-    AppxTarget? Appx = null);
+    AppxTarget? Appx = null,
+    FileTarget? File = null);
 
 public sealed record RegistryTarget(string Path, string Name, RegKind Kind, string Data);
 public sealed record ServiceTarget(string Name, StartType Start);
@@ -86,6 +103,8 @@ public sealed record ServiceTarget(string Name, StartType Start);
 public sealed record TaskTarget(string Path, bool Enabled);
 /// <summary>Приложение Appx, которое должно отсутствовать (удалено для всех пользователей и из provisioned). Восстановить из baseline нельзя (D-033).</summary>
 public sealed record AppxTarget(string Name);
+/// <summary>Файл-ресурс, который должен лежать в dest: Source — путь относительно каталога ресурсов, Dest — путь с %ENV%. Откат возвращает прежний файл или удаляет созданный.</summary>
+public sealed record FileTarget(string Source, string Dest);
 
 /// <summary>Карточка твика (читается из YAML каталога catalog/, ключи camelCase; PARAMETERS §2).
 /// Поля после Actions необязательны.</summary>
@@ -119,9 +138,9 @@ public enum ActionStatus { Planned, Started, Applied, AlreadyApplied, Failed, Sk
 public sealed record PlanEntry(string TweakId, string ActionId, string Target, string Before, string Expected);
 public sealed record Plan(string FormatVersion, string RunId, DateTimeOffset CreatedAt, IReadOnlyList<PlanEntry> Entries);
 
-/// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service/Task заполнено.</summary>
+/// <summary>Снимок исходного состояния одной цели. Одно из Registry/Service/Task/File заполнено (для Appx — AppxPackages).</summary>
 /// <param name="KeyExisted">Для реестра: существовал ли ключ до apply (если нет — revert удаляет его, когда он пуст).</param>
-public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null, bool? KeyExisted = null, string? AppxPackages = null);
+public sealed record BaselineEntry(string TweakId, string ActionId, RegValue? Registry, ServiceState? Service, TaskState? Task = null, bool? KeyExisted = null, string? AppxPackages = null, FileState? File = null);
 /// <param name="IsRevertMarker">Снимок, записанный после успешного отката: состояние целей после revert. Граница истории —
 /// PickBaseline не заглядывает за него, поэтому уже откатанный apply не «воскресает» при следующем откате.</param>
 public sealed record Baseline(string FormatVersion, string BaselineId, DateTimeOffset CreatedAt, IReadOnlyList<BaselineEntry> Entries, bool IsRevertMarker = false);

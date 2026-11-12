@@ -22,6 +22,8 @@ public static class TweakCatalog
 
     private static readonly System.Text.RegularExpressions.Regex AppxNameRx = new(@"^[A-Za-z0-9._*-]{3,128}$", System.Text.RegularExpressions.RegexOptions.Compiled);
     /// <summary>Приложения, которые каталог удалять не вправе (D-033): Store, Xbox-стек, Defender/Security, WSL, winget, среды выполнения, оболочка.</summary>
+    private static readonly string[] FileDestPrefixes = { "%WINDIR%\\Web\\", "%ProgramData%\\BareOS\\" };
+
     private static readonly string[] ProtectedAppx =
     {
         "WindowsStore", "StorePurchaseApp", "Xbox", "GamingApp", "SecHealthUI", "SecurityHealth", "WindowsDefender",
@@ -82,6 +84,12 @@ public static class TweakCatalog
         public ServiceDto? Service { get; set; }
         public TaskDto? Task { get; set; }
         public AppxDto? Appx { get; set; }
+        public FileDto? File { get; set; }
+    }
+    private sealed class FileDto
+    {
+        public string? Source { get; set; }
+        public string? Dest { get; set; }
     }
     private sealed class AppxDto
     {
@@ -161,7 +169,8 @@ public static class TweakCatalog
                 task = new TaskTarget(tk.Path ?? "", st == "enabled");
             }
             AppxTarget? appx = a.Appx is { } ax ? new AppxTarget(ax.Name ?? "") : null;
-            return new TweakAction(a.Id ?? "", reg, svc, task, appx);
+            FileTarget? file = a.File is { } fl ? new FileTarget(fl.Source ?? "", fl.Dest ?? "") : null;
+            return new TweakAction(a.Id ?? "", reg, svc, task, appx, file);
         }).ToList();
         return new Tweak(d.Id ?? "", d.Title ?? "",
             ParseEnum<Verdict>(d.Verdict, "verdict", path), ParseEnum<Stability>(d.Stability, "stability", path),
@@ -201,8 +210,8 @@ public static class TweakCatalog
         {
             if (a == null || string.IsNullOrWhiteSpace(a.Id)) throw new TweakValidationException(P("действие без Id"));
             if (!ids.Add(a.Id)) throw new TweakValidationException(P($"повторяющийся Id действия '{a.Id}'"));
-            if ((a.Registry != null ? 1 : 0) + (a.Service != null ? 1 : 0) + (a.Task != null ? 1 : 0) + (a.Appx != null ? 1 : 0) != 1)
-                throw new TweakValidationException(P($"действие '{a.Id}': должно быть ровно одно из Registry/Service/Task/Appx"));
+            if ((a.Registry != null ? 1 : 0) + (a.Service != null ? 1 : 0) + (a.Task != null ? 1 : 0) + (a.Appx != null ? 1 : 0) + (a.File != null ? 1 : 0) != 1)
+                throw new TweakValidationException(P($"действие '{a.Id}': должно быть ровно одно из Registry/Service/Task/Appx/File"));
             if (a.Appx is { } ap)
             {
                 if (!AppxNameRx.IsMatch(ap.Name))
@@ -212,6 +221,14 @@ public static class TweakCatalog
                 foreach (var prot in ProtectedAppx)
                     if (ap.Name.Contains(prot, StringComparison.OrdinalIgnoreCase) || prot.Contains(ap.Name.Replace("*", ""), StringComparison.OrdinalIgnoreCase))
                         throw new TweakValidationException(P($"действие '{a.Id}': защищённое приложение '{ap.Name}' (Store/Xbox/Defender/WSL/инфраструктура, D-033)"));
+            }
+            if (a.File is { } fl)
+            {
+                if (string.IsNullOrWhiteSpace(fl.Source) || fl.Source.Contains(':') || fl.Source.StartsWith('\\') || fl.Source.StartsWith('/') || fl.Source.Contains("..", StringComparison.Ordinal))
+                    throw new TweakValidationException(P($"действие '{a.Id}': file.source должен быть относительным путём без '..': '{fl.Source}'"));
+                var dst = fl.Dest ?? "";
+                if (dst.Contains("..", StringComparison.Ordinal) || !FileDestPrefixes.Any(x => dst.StartsWith(x, StringComparison.OrdinalIgnoreCase)) || dst.EndsWith("\\", StringComparison.Ordinal))
+                    throw new TweakValidationException(P($"действие '{a.Id}': file.dest должен начинаться с одного из {string.Join(", ", FileDestPrefixes)} и указывать на файл: '{fl.Dest}'"));
             }
             if (a.Task is { } tt)
             {
@@ -224,8 +241,8 @@ public static class TweakCatalog
             if (a.Registry is { } r)
             {
                 if (string.IsNullOrWhiteSpace(r.Path)) throw new TweakValidationException(P($"действие '{a.Id}': пустой путь"));
-                if (!(r.Path.StartsWith("HKLM\\", StringComparison.OrdinalIgnoreCase) || r.Path.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase)))
-                    throw new TweakValidationException(P($"действие '{a.Id}': путь должен начинаться с HKLM\\ или HKCU\\: '{r.Path}'"));
+                if (!(r.Path.StartsWith("HKLM\\", StringComparison.OrdinalIgnoreCase) || r.Path.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase) || r.Path.StartsWith("HKDU\\", StringComparison.OrdinalIgnoreCase)))
+                    throw new TweakValidationException(P($"действие '{a.Id}': путь должен начинаться с HKLM\\, HKCU\\ или HKDU\\ (профиль по умолчанию): '{r.Path}'"));
                 if (r.Name == null || r.Data == null) throw new TweakValidationException(P($"действие '{a.Id}': Name/Data обязательны"));
                 if (!IsCanonicalData(r.Kind, r.Data))
                     throw new TweakValidationException(P($"действие '{a.Id}': значение '{r.Data}' не в каноническом виде для {r.Kind} (DWord/QWord — десятичное число без знака и ведущих нулей, Binary — hex)"));

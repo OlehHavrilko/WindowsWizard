@@ -248,3 +248,89 @@ public class ProofTests
         Assert.Equal(200, rt.Metrics["proc.count"]);
     }
 }
+
+public class FileActionTests
+{
+    private const string Dst = @"%WINDIR%\Web\Wallpaper\BareOS\w.png";
+
+    private static string FileCard(string src, string dst)
+        => "id: t.file\ntitle: T\nverdict: Standard\nstability: Stable\nintent: i\nevidence: e\nactions:\n  - id: a\n    file:\n      source: '" + src + "'\n      dest: '" + dst + "'\n";
+
+    private static Tweak Load(string yaml)
+    {
+        var f = Path.Combine(Path.GetTempPath(), "bos-file-" + Guid.NewGuid().ToString("N") + ".yml");
+        File.WriteAllText(f, yaml);
+        try { return Assert.Single(TweakCatalog.LoadFile(f)); } finally { File.Delete(f); }
+    }
+
+    [Fact]
+    public void File_Parses() => Assert.Equal(Dst, Load(FileCard("wall.png", Dst)).Actions[0].File!.Dest);
+
+    [Theory]
+    [InlineData("..\\x.png", @"%WINDIR%\Web\a.png")]
+    [InlineData("C:\\x.png", @"%WINDIR%\Web\a.png")]
+    [InlineData("x.png", @"C:\Windows\System32\a.dll")]
+    [InlineData("x.png", @"%WINDIR%\System32\a.dll")]
+    [InlineData("x.png", @"%WINDIR%\Web\..\System32\a.dll")]
+    public void File_BadPaths_Rejected(string src, string dst)
+        => Assert.Throws<TweakValidationException>(() => Load(FileCard(src, dst)));
+
+    [Fact]
+    public void Apply_NewFile_Verify_RevertDeletes()
+    {
+        var r = new Rig();
+        r.Files.Sources["w.png"] = "IMG";
+        var t = Rig.T("t.file", Rig.File_("a", "w.png", Dst));
+        Assert.Equal(ActionStatus.Applied, r.Engine.Apply(new[] { t }).Entries.Single().Status);
+        Assert.Equal("IMG", r.Files.Disk[Dst]);
+        Assert.Equal(ActionStatus.Verified, r.Engine.Verify(new[] { t }).Entries.Single().Status);
+        Assert.Equal(ActionStatus.Reverted, r.Engine.Revert(new[] { t }).Entries.Single().Status);
+        Assert.False(r.Files.Disk.ContainsKey(Dst));
+    }
+
+    [Fact]
+    public void Apply_ExistingFile_BackedUp_RevertRestores()
+    {
+        var r = new Rig();
+        r.Files.Sources["w.png"] = "NEW";
+        r.Files.Disk[Dst] = "OLD";
+        var t = Rig.T("t.file", Rig.File_("a", "w.png", Dst));
+        Assert.Equal(ActionStatus.Applied, r.Engine.Apply(new[] { t }).Entries.Single().Status);
+        Assert.Equal("NEW", r.Files.Disk[Dst]);
+        Assert.Equal(ActionStatus.Reverted, r.Engine.Revert(new[] { t }).Entries.Single().Status);
+        Assert.Equal("OLD", r.Files.Disk[Dst]);
+    }
+
+    [Fact]
+    public void Apply_AlreadyIdentical_NoCopy()
+    {
+        var r = new Rig();
+        r.Files.Sources["w.png"] = "SAME";
+        r.Files.Disk[Dst] = "SAME";
+        var rep = r.Engine.Apply(new[] { Rig.T("t.file", Rig.File_("a", "w.png", Dst)) });
+        Assert.Equal(ActionStatus.AlreadyApplied, rep.Entries.Single().Status);
+        Assert.Empty(r.Files.Backups);
+    }
+
+    [Fact]
+    public void Apply_CopyFails_Failed()
+    {
+        var r = new Rig();
+        r.Files.Sources["w.png"] = "X";
+        r.Files.FailCopyWhen = _ => true;
+        var rep = r.Engine.Apply(new[] { Rig.T("t.file", Rig.File_("a", "w.png", Dst)) });
+        Assert.Equal(ActionStatus.Failed, rep.Entries.Single().Status);
+    }
+
+    [Fact]
+    public void Revert_UserChangedFile_Conflict()
+    {
+        var r = new Rig();
+        r.Files.Sources["w.png"] = "NEW";
+        var t = Rig.T("t.file", Rig.File_("a", "w.png", Dst));
+        r.Engine.Apply(new[] { t });
+        r.Files.Disk[Dst] = "USER";
+        Assert.Equal(ActionStatus.Conflict, r.Engine.Revert(new[] { t }).Entries.Single().Status);
+        Assert.Equal("USER", r.Files.Disk[Dst]);
+    }
+}

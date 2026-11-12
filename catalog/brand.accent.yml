@@ -1,0 +1,36 @@
+id: brand.accent
+title: "Акцентный цвет Signal (мятный #3DDC97)"
+verdict: Standard
+stability: Stable
+category: appearance
+scope: user
+risk: T1
+status: accepted
+intent: "Акцентный цвет текущего пользователя: Signal #3DDC97 (AccentColor в DWM и AccentColorMenu/StartColorMenu в Explorer). Цвет не распространяется на заголовки окон и панель задач (ColorPrevalence = 0)."
+evidence: "Значения HKCU DWM AccentColor = 4288273469 (0xFF97DC3D, ABGR) и Explorer\\Accent AccentColorMenu, StartColorMenu равны ему; ColorPrevalence = 0 (verify)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: dwm-accent
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\DWM'
+      name: AccentColor
+      kind: DWord
+      data: "4288273469"
+  - id: dwm-prevalence
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\DWM'
+      name: ColorPrevalence
+      kind: DWord
+      data: "0"
+  - id: menu-accent
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Accent'
+      name: AccentColorMenu
+      kind: DWord
+      data: "4288273469"
+  - id: start-accent
+    registry:
+      path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Accent'
+      name: StartColorMenu
+      kind: DWord
+      data: "4288273469"

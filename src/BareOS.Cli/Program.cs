@@ -15,6 +15,7 @@ public static class Program
           --data <dir>      каталог прогонов (по умолчанию %ProgramData%\BareOS\runs)
           --only <id,id>    выполнить только перечисленные твики (в т. ч. proposed; без --only берутся accepted/verified)
           --run <id|latest> (report) прогон для отчёта, по умолчанию latest
+          --resources <dir> каталог ресурсов для действий file (по умолчанию ресурсы рядом с каталогом: <catalog>/../resources)
           --json            вывод в JSON
           --allow-ucpd-disable  (apply/revert) отключить саму защиту UCPD (служба + задача velocity), а не
                             обходить её (D-032); требует перезагрузки, чтобы вступить в силу; по умолчанию выключен
@@ -66,7 +67,7 @@ public static class Program
         bool json = false;
         bool allowUcpdDisable = false;
         string runArg = "latest";
-        string label = "замер", outFile = "", beforeFile = "", afterFile = "", htmlFile = "";
+        string resourcesDir = "", label = "замер", outFile = "", beforeFile = "", afterFile = "", htmlFile = "";
 
         for (int i = 1; i < args.Length; i++)
         {
@@ -80,6 +81,7 @@ public static class Program
                     break;
                 case "--run": if (!TryNext(args, ref i, out runArg!)) return Fail("--run требует значение"); break;
                 case "--json": json = true; break;
+                case "--resources": if (!TryNext(args, ref i, out resourcesDir!)) return Fail("--resources требует значение"); break;
                 case "--label": if (!TryNext(args, ref i, out label!)) return Fail("--label требует значение"); break;
                 case "--out": if (!TryNext(args, ref i, out outFile!)) return Fail("--out требует значение"); break;
                 case "--before": if (!TryNext(args, ref i, out beforeFile!)) return Fail("--before требует значение"); break;
@@ -160,17 +162,21 @@ public static class Program
             new JsonRunStore(dataDir).SecureRoot();
             if (!RunLock.TryAcquire(dataDir, out var lk, out var holder))
                 return Fail($"Другой прогон уже выполняется (замок {Path.Combine(dataDir, RunLock.FileName)}: {holder}).");
-            using (lk) return Execute(command, tweaks, dataDir, json);
+            using (lk) return Execute(command, tweaks, dataDir, json, ResolveResources(resourcesDir, tweaksDir));
         }
-        return Execute(command, tweaks, dataDir, json);
+        return Execute(command, tweaks, dataDir, json, ResolveResources(resourcesDir, tweaksDir));
     }
 
-    private static int Execute(string command, IReadOnlyList<Tweak> tweaks, string dataDir, bool json)
+    private static string ResolveResources(string given, string catalogDir)
+        => given != "" ? given : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(catalogDir)) ?? ".", "resources");
+
+    private static int Execute(string command, IReadOnlyList<Tweak> tweaks, string dataDir, bool json, string resourcesDir)
     {
-        var registry = new RegistryAccess();
+        using var registry = new RegistryAccess();
         // Обход блокировки UCPD через локальную групповую политику (D-031): пишем через gpsvc, когда прямая запись
         // запрещена ОС. Защиту не отключает, поэтому включён всегда, в отличие от отключения самой службы UCPD.
-        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry), new AppxAccess());
+        var env = new EngineEnv(registry, new ServiceAccess(), () => DateTimeOffset.Now, new TaskAccess(), new PolicyRegistryWriter(registry), new AppxAccess(),
+            new BareOS.Core.Windows.FileAccess(resourcesDir, Path.Combine(dataDir, "backups")));
         // миллисекунды + суффикс: два прогона в одну секунду не должны делить каталог (baseline не перезаписывается → preflight падал бы)
         var runId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N")[..4];
         var jsonStore = new JsonRunStore(dataDir);

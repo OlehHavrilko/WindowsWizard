@@ -1,0 +1,22 @@
+id: brand.oem-logo
+title: "Логотип Bare OS в «О системе»"
+verdict: Standard
+stability: Stable
+category: appearance
+scope: machine
+risk: T1
+status: accepted
+intent: "Копирует логотип 120×120 в ProgramData\\BareOS и прописывает путь в OEMInformation\\Logo: знак «b_» рядом со сведениями о системе."
+evidence: "Файл oem-logo.bmp лежит в ProgramData\\BareOS с тем же SHA-256, что ресурс; OEMInformation Logo указывает на него (verify, визуально в «О системе»)."
+reversibility: "revert по baseline: значения возвращаются к исходным или удаляются"
+actions:
+  - id: oem-logo-file
+    file:
+      source: 'oem-logo.bmp'
+      dest: '%ProgramData%\BareOS\oem-logo.bmp'
+  - id: oem-logo-path
+    registry:
+      path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation'
+      name: Logo
+      kind: String
+      data: "C:\\ProgramData\\BareOS\\oem-logo.bmp"

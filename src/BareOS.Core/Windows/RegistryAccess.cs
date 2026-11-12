@@ -6,8 +6,40 @@ namespace BareOS.Core.Windows;
 
 /// <summary>Реализация IRegistryAccess поверх Microsoft.Win32.Registry (64-битное представление).
 /// Путь: "HKLM\SOFTWARE\..." (также HKCU, HKCR, HKU, HKCC). На не-Windows бросает PlatformNotSupportedException.</summary>
-public sealed class RegistryAccess : IRegistryAccess
+public sealed class RegistryAccess : IRegistryAccess, IDisposable
 {
+    private const string DefaultUserKey = "BareOS_DefaultUser";
+    private static bool _defaultLoaded;
+
+    /// <summary>HKDU — профиль по умолчанию (C:\Users\Default\NTUSER.DAT): куст временно монтируется в HKU\BareOS_DefaultUser (reg load), чтобы новые пользователи получили настройки.</summary>
+    [SupportedOSPlatform("windows")]
+    private static void EnsureDefaultUserLoaded()
+    {
+        if (_defaultLoaded) return;
+        using (var probe = Registry.Users.OpenSubKey(DefaultUserKey)) { if (probe is not null) { _defaultLoaded = true; return; } }
+        var dat = Path.Combine(Environment.GetEnvironmentVariable("SystemDrive") ?? "C:", "Users", "Default", "NTUSER.DAT");
+        RunReg("load", "HKU\\" + DefaultUserKey, dat);
+        _defaultLoaded = true;
+    }
+
+    private static void RunReg(params string[] args)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("reg.exe") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
+        foreach (var a in args) psi.ArgumentList.Add(a);
+        using var p = System.Diagnostics.Process.Start(psi) ?? throw new InvalidOperationException("Не удалось запустить reg.exe");
+        var o = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
+        p.WaitForExit();
+        if (p.ExitCode != 0) throw new InvalidOperationException($"reg.exe {string.Join(' ', args)}: код {p.ExitCode}: {o.Trim()}");
+    }
+
+    /// <summary>Размонтирует куст профиля по умолчанию, если он был смонтирован этим процессом.</summary>
+    public void Dispose()
+    {
+        if (!OperatingSystem.IsWindows() || !_defaultLoaded) return;
+        GC.Collect(); GC.WaitForPendingFinalizers();
+        try { RunReg("unload", "HKU\\" + DefaultUserKey); _defaultLoaded = false; } catch (InvalidOperationException) { /* куст отпустится при выходе процесса */ }
+    }
+
     public RegValue Read(string path, string name)
     {
         if (!OperatingSystem.IsWindows()) throw NotWindows();
@@ -67,6 +99,11 @@ public sealed class RegistryAccess : IRegistryAccess
         var hive = (i < 0 ? path : path[..i]).ToUpperInvariant();
         var sub = i < 0 ? "" : path[(i + 1)..];
         var view = RegistryView.Registry64;
+        if (hive == "HKDU")
+        {
+            EnsureDefaultUserLoaded();
+            return (RegistryKey.OpenBaseKey(RegistryHive.Users, view), sub.Length == 0 ? DefaultUserKey : DefaultUserKey + "\\" + sub);
+        }
         RegistryHive h = hive switch
         {
             "HKLM" or "HKEY_LOCAL_MACHINE" => RegistryHive.LocalMachine,

@@ -99,6 +99,26 @@ public sealed class FakeAppx : IAppxAccess
     }
 }
 
+public sealed class FakeFiles : IFileAccess
+{
+    public Dictionary<string, string> Sources = new();          // source -> содержимое
+    public Dictionary<string, string> Disk = new(StringComparer.OrdinalIgnoreCase);   // dest -> содержимое
+    public Dictionary<string, string> Backups = new();
+    public Func<string, bool>? FailCopyWhen;
+
+    private static string H(string c) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(c)));
+    public FileState Read(string dest) => Disk.TryGetValue(dest, out var c) ? new FileState(true, H(c)) : new FileState(false);
+    public string SourceHash(string source) => Sources.TryGetValue(source, out var c) ? H(c) : throw new FileNotFoundException(source);
+    public string Backup(string dest, string tag) { Backups[tag] = Disk[dest]; return tag; }
+    public void Copy(string source, string dest)
+    {
+        if (FailCopyWhen?.Invoke(dest) == true) throw new IOException("injected copy failure " + dest);
+        Disk[dest] = Sources[source];
+    }
+    public void Restore(string backupPath, string dest) => Disk[dest] = Backups[backupPath];
+    public void Delete(string dest) => Disk.Remove(dest);
+}
+
 public sealed class FakeServices : IServiceAccess
 {
     public Dictionary<string, ServiceState> States = new(StringComparer.OrdinalIgnoreCase);
@@ -172,6 +192,7 @@ public sealed class Rig
     public FakeServices Svc = new();
     public FakeTasks Tasks = new();
     public FakeAppx Appx = new();
+    public FakeFiles Files = new();
     public MemStore Store = new();
     public ITweakEngine Engine;
     public const string K = @"HKLM\SOFTWARE\Test";
@@ -190,7 +211,7 @@ public sealed class Rig
     }
 
     private ITweakEngine Make(string runId)
-        => new TweakEngine(new EngineEnv(Reg, Svc, () => _now, Tasks, Policy, Appx), _store, runId);
+        => new TweakEngine(new EngineEnv(Reg, Svc, () => _now, Tasks, Policy, Appx, Files), _store, runId);
 
     /// <summary>Новый прогон (новый процесс bareos) на том же хранилище и той же «системе», на минуту позже.</summary>
     public ITweakEngine NextRun(string runId)
@@ -215,6 +236,8 @@ public sealed class Rig
         new(id, Service: new ServiceTarget(name, s));
     public static TweakAction Task_(string id, string path, bool enabled) =>
         new(id, Task: new TaskTarget(path, enabled));
+    public static TweakAction File_(string id, string source, string dest) =>
+        new(id, File: new FileTarget(source, dest));
     public static TweakAction Appx_(string id, string name) =>
         new(id, Appx: new AppxTarget(name));
     public static RegValue D(int v) => new(true, RegKind.DWord, v.ToString());

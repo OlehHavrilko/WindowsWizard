@@ -46,11 +46,17 @@ public sealed class TweakEngine : ITweakEngine
     private IAppxAccess Appx => _env.Appx ?? throw new InvalidOperationException("Обработчик appx не настроен (IAppxAccess)");
     private static string FmtAppx(IReadOnlyList<string> found) => found.Count == 0 ? "<absent>" : "present: " + string.Join(", ", found);
 
+    private IFileAccess Files => _env.Files ?? throw new InvalidOperationException("Обработчик file не настроен (IFileAccess)");
+    private static string Short(string? h) => h is null ? "" : h[..Math.Min(12, h.Length)];
+    private static string Fmt(FileState f) => f.Exists ? "sha256:" + Short(f.Sha256) : "<missing>";
+    private static bool Same(FileState a, FileState b)
+        => a.Exists == b.Exists && (!a.Exists || string.Equals(a.Sha256, b.Sha256, StringComparison.OrdinalIgnoreCase));
+
     private ITaskAccess Tasks => _env.Tasks ?? throw new InvalidOperationException("Обработчик task не настроен (ITaskAccess)");
 
     private static string TargetOf(TweakAction a) => a.Registry != null
         ? $"{a.Registry.Path}\\{a.Registry.Name}"
-        : a.Service != null ? $"service:{a.Service.Name}" : a.Task != null ? $"task:{a.Task.Path}" : $"appx:{a.Appx!.Name}";
+        : a.Service != null ? $"service:{a.Service.Name}" : a.Task != null ? $"task:{a.Task.Path}" : a.File != null ? $"file:{a.File.Dest}" : $"appx:{a.Appx!.Name}";
 
     private static RegValue ExpectedReg(RegistryTarget r) => new(true, r.Kind, r.Data);
     private static ServiceState ExpectedSvc(ServiceTarget s) => new(true, s.Start);
@@ -59,39 +65,57 @@ public sealed class TweakEngine : ITweakEngine
         a.Registry != null ? Fmt(_env.Registry.Read(a.Registry.Path, a.Registry.Name))
         : a.Service != null ? Fmt(_env.Services.Read(a.Service.Name))
         : a.Task != null ? Fmt(Tasks.Read(a.Task.Path))
+        : a.File != null ? Fmt(Files.Read(a.File.Dest))
         : FmtAppx(Appx.Find(a.Appx!.Name));
 
-    private static string ExpectedStr(TweakAction a) =>
+    private string ExpectedStr(TweakAction a) =>
         a.Registry != null ? Fmt(ExpectedReg(a.Registry))
         : a.Service != null ? (a.Service.Start == StartType.Disabled ? "Disabled (или <missing>)" : Fmt(ExpectedSvc(a.Service)))
         : a.Task != null ? (a.Task.Enabled ? "Enabled" : "Disabled (или <missing>)")
+        : a.File != null ? "sha256:" + Short(SourceHashSafe(a.File))
         : "<absent>";
+
+    private string? SourceHashSafe(FileTarget f) { try { return _env.Files?.SourceHash(f.Source); } catch (Exception) { return "<нет ресурса>"; } }
 
     private bool MatchesExpected(TweakAction a) =>
         a.Registry != null ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), ExpectedReg(a.Registry))
         : a.Service != null ? SvcSatisfied(_env.Services.Read(a.Service.Name), a.Service)
         : a.Task != null ? Satisfies(Tasks.Read(a.Task.Path), a.Task)
+        : a.File != null ? FileMatches(Files.Read(a.File.Dest), a.File)
         : Appx.Find(a.Appx!.Name).Count == 0;
 
-    private BaselineEntry Capture(string tweakId, TweakAction a) =>
+    private bool FileMatches(FileState cur, FileTarget t)
+        => cur.Exists && string.Equals(cur.Sha256, Files.SourceHash(t.Source), StringComparison.OrdinalIgnoreCase);
+
+    private BaselineEntry CaptureFile(string tweakId, TweakAction a, bool backup)
+    {
+        var cur = Files.Read(a.File!.Dest);
+        string? bak = null;
+        if (backup && cur.Exists && !FileMatches(cur, a.File))
+            bak = Files.Backup(a.File.Dest, _runId + "-" + tweakId + "-" + a.Id);
+        return new BaselineEntry(tweakId, a.Id, null, null, null, null, null, cur with { BackupPath = bak });
+    }
+
+    private BaselineEntry Capture(string tweakId, TweakAction a, bool backup = true) =>
+        a.File != null ? CaptureFile(tweakId, a, backup) :
         a.Registry != null ? new BaselineEntry(tweakId, a.Id, _env.Registry.Read(a.Registry.Path, a.Registry.Name), null, null, _env.Registry.KeyExists(a.Registry.Path))
         : a.Service != null ? new BaselineEntry(tweakId, a.Id, null, _env.Services.Read(a.Service.Name))
         : a.Task != null ? new BaselineEntry(tweakId, a.Id, null, null, Tasks.Read(a.Task.Path))
         : new BaselineEntry(tweakId, a.Id, null, null, null, null, string.Join("; ", Appx.Find(a.Appx!.Name)));
 
     private static bool HasState(BaselineEntry e, TweakAction a)
-        => a.Registry != null ? e.Registry != null : a.Service != null ? e.Service != null : a.Task != null && e.Task != null;
+        => a.Registry != null ? e.Registry != null : a.Service != null ? e.Service != null : a.Task != null ? e.Task != null : a.File != null && e.File != null;
 
-    private static bool CapturedExpected(BaselineEntry e, TweakAction a)
+    private bool CapturedExpected(BaselineEntry e, TweakAction a)
         => a.Registry != null ? Same(e.Registry!, ExpectedReg(a.Registry))
          : a.Service != null ? SvcSatisfied(e.Service!, a.Service)
          : a.Task != null ? Satisfies(e.Task!, a.Task)
-         : false;
+         : a.File != null && e.File!.Exists && string.Equals(e.File.Sha256, Files.SourceHash(a.File.Source), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Снимок цели для отката: самый новый, в котором цель ещё НЕ была в ожидаемом состоянии
     /// (т. е. сделанный перед тем, как движок её изменил). Если во всех снимках цель уже была ожидаемой —
     /// самый новый (откатывать нечего). Повторный apply и apply по частям (--only) так не теряют исходное.</summary>
-    private static BaselineEntry? PickBaseline(IReadOnlyList<Baseline> oldestFirst, string tweakId, TweakAction a)
+    private BaselineEntry? PickBaseline(IReadOnlyList<Baseline> oldestFirst, string tweakId, TweakAction a)
     {
         BaselineEntry? newest = null;
         for (int i = oldestFirst.Count - 1; i >= 0; i--)
@@ -206,6 +230,7 @@ public sealed class TweakEngine : ITweakEngine
                 try { _env.Services.StopService(a.Service.Name); } catch (Exception) { /* служба остановится при перезагрузке */ }
         }
         else if (a.Task != null) Tasks.SetEnabled(a.Task.Path, a.Task.Enabled);
+        else if (a.File != null) Files.Copy(a.File.Source, a.File.Dest);
         else Appx.Remove(a.Appx!.Name);
     }
 
@@ -301,11 +326,12 @@ public sealed class TweakEngine : ITweakEngine
                     entries.Add(nr); TryJournal(nr);
                     continue;
                 }
-                string baseStr = a.Registry != null ? Fmt(be.Registry!) : a.Service != null ? Fmt(be.Service!) : Fmt(be.Task!);   // Appx сюда не доходит: обработан выше
+                string baseStr = a.Registry != null ? Fmt(be.Registry!) : a.Service != null ? Fmt(be.Service!) : a.File != null ? Fmt(be.File!) : Fmt(be.Task!);   // Appx сюда не доходит: обработан выше
                 cur = CurrentStr(a);
                 bool IsBaseNow() => a.Registry != null
                     ? Same(_env.Registry.Read(a.Registry.Path, a.Registry.Name), be.Registry!)
                     : a.Service != null ? Same(_env.Services.Read(a.Service.Name), be.Service!)
+                    : a.File != null ? Same(Files.Read(a.File.Dest), be.File!)
                     : Same(Tasks.Read(a.Task!.Path), be.Task!);
                 bool isBase = IsBaseNow();
                 ReportEntry res;
@@ -322,9 +348,18 @@ public sealed class TweakEngine : ITweakEngine
                     {
                         res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, cur, baseStr, "Задачи не было в baseline, восстановление невозможно");
                     }
+                    else if (a.File != null && be.File!.Exists && be.File.BackupPath is null)
+                    {
+                        res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, cur, cur, baseStr, "Резервной копии прежнего файла нет, восстановление невозможно");
+                    }
                     else
                     {
-                        if (a.Registry != null)
+                        if (a.File != null)
+                        {
+                            if (be.File!.Exists) Files.Restore(be.File.BackupPath!, a.File.Dest);
+                            else Files.Delete(a.File.Dest);
+                        }
+                        else if (a.Registry != null)
                         {
                             try { _env.Registry.Write(a.Registry.Path, a.Registry.Name, be.Registry!); }
                             catch (Exception wex) when (TryPolicyFallback(a.Registry.Path, a.Registry.Name, be.Registry!, wex))
@@ -384,7 +419,7 @@ public sealed class TweakEngine : ITweakEngine
             var be = new List<BaselineEntry>();
             foreach (var t in tweaks)
                 foreach (var a in t.Actions)
-                    if (done.Contains((t.Id, a.Id))) be.Add(Capture(t.Id, a));
+                    if (done.Contains((t.Id, a.Id))) be.Add(Capture(t.Id, a, backup: false));
             _store.SaveBaseline(new Baseline(FormatVersion, _runId + "-revert", _env.Now(), be, IsRevertMarker: true));
         }
         catch { /* маркер вспомогательный: сбой не должен ломать отчёт об откате */ }
