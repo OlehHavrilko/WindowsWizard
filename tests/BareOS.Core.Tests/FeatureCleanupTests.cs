@@ -259,7 +259,8 @@ public class CleanupEngineTests
     public void CleanupAccess_IsSafeRoot_RejectsDriveRootAndShallow()
     {
         Assert.False(CleanupAccess.IsSafeRoot("/"));
-        var notTemp = Directory.CreateTempSubdirectory("bos-").FullName;
+        // не в системном Temp: на Windows-CI каталог TEMP сам содержит сегмент Temp, и проверка «без Temp в пути» была бы ложной
+        var notTemp = Directory.CreateDirectory(Path.Join(AppContext.BaseDirectory, "bos-" + Guid.NewGuid().ToString("N"))).FullName;
         var inner = Directory.CreateDirectory(Path.Join(notTemp, "data")).FullName;
         var temp = Directory.CreateDirectory(Path.Join(notTemp, "Temp")).FullName;
         try
