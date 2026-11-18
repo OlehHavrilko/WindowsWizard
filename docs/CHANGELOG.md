@@ -37,6 +37,7 @@
 - Каталог 39 карточек: производительность по образцу AtlasOS/ReviOS — планировщик CPU, MMCSS, питание, QoS, быстрое выключение, NTFS; спорные (таймер, DisablePagingExecutive, Prefetch, HAGS) — `proposed`, включаются через `--only`.
 - Движок: действие `file` (копирование ресурса с резервной копией и откатом: возвращает прежний файл или удаляет созданный), пути `HKDU\\` для профиля по умолчанию, `--resources`. Карточки оформления: `brand.wallpaper`, `brand.dark-mode`, `brand.accent`, `brand.default-user`, `brand.oem-logo`; обои рисует `tools/branding/wallpaper.js`.
 - Каталог 45 карточек: добавлены приватность (CEIP, инвентаризация, ввод, Copilot-политика, карты), Edge-приватность, Проводник, `brand.oem-info` («О системе»). Плейбук v0.2, иконка — знак «b_».
+- Прогон на ВМ 2026-11-18: сбой одного действия больше не останавливает apply (остальные выполняются, итог по-прежнему Ok=false). `perf.search-power-modes` переведена в proposed: ключ Windows Search принадлежит TrustedInstaller.
 - Proof Report (F-01): команды `bareos measure` и `bareos proof` (процессы, память, Appx, службы с автозапуском, автозапуск, размер WindowsApps; текст и HTML), задачи плейбука `05-measure-before` и `95-proof`; отчёт в `%ProgramData%\BareOS\proof\proof.html`.
 - Карточки `appx.copilot`, `appx.widgets`, `appx.weather-news`, `appx.consumer-apps`; откат Appx не восстанавливает и говорит об этом явно.
 
