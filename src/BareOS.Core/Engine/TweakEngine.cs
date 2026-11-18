@@ -190,15 +190,9 @@ public sealed class TweakEngine : ITweakEngine
             return Finish("apply", entries);
         }
 
-        bool failed = false;
+        // Сбой одного действия не останавливает остальные: действия независимы, итог (Ok=false, код выхода 1) всё равно покажет сбой.
         foreach (var (t, a) in actions)
         {
-            if (failed)
-            {
-                var sk = new ReportEntry(t.Id, a.Id, ActionStatus.Skipped, "", "", ExpectedStr(a), "Пропущено после сбоя");
-                entries.Add(sk); TryJournal(sk);
-                continue;
-            }
             string expected = ExpectedStr(a), before = "";
             try
             {
@@ -216,7 +210,6 @@ public sealed class TweakEngine : ITweakEngine
                         : new ReportEntry(t.Id, a.Id, ActionStatus.Failed, before, after, expected, "После записи значение не совпало с ожидаемым");
                 }
                 entries.Add(res); Journal(res);
-                if (res.Status == ActionStatus.Failed) failed = true;
             }
             catch (Exception ex)
             {
@@ -232,7 +225,6 @@ public sealed class TweakEngine : ITweakEngine
                 if (blocked is not null) { entries.Add(blocked); TryJournal(blocked); continue; }   // блокировка ОС не сбой движка: остальные действия выполняются
                 var res = new ReportEntry(t.Id, a.Id, ActionStatus.Failed, before, "", expected, ex.Message);
                 entries.Add(res); TryJournal(res);
-                failed = true;
             }
         }
         return Finish("apply", entries);

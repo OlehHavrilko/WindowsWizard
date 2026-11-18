@@ -71,7 +71,7 @@ public class EngineTests
     }
 
     [Fact]
-    public void Apply_Failure_StopsRest_Skipped()
+    public void Apply_Failure_ContinuesRest()
     {
         var r = new Rig();
         r.Reg.FailWhen = (_, n, _) => n == "B";
@@ -79,31 +79,31 @@ public class EngineTests
         Assert.Equal(ActionStatus.Applied, One(rep, "a").Status);
         Assert.Equal(ActionStatus.Failed, One(rep, "b").Status);
         Assert.NotNull(One(rep, "b").Error);
-        Assert.Equal(ActionStatus.Skipped, One(rep, "c").Status);
-        Assert.Equal(RegValue.Missing, r.Reg.Read(K, "C"));
+        Assert.Equal(ActionStatus.Applied, One(rep, "c").Status);
+        Assert.True(r.Reg.Read(K, "C").Exists);
         Assert.False(rep.Ok);
     }
 
     [Fact]
-    public void Apply_Failure_SkipsLaterTweaks_Too()
+    public void Apply_Failure_DoesNotSkipLaterTweaks()
     {
         var r = new Rig();
         r.Reg.FailWhen = (_, n, _) => n == "A";
         var rep = r.Engine.Apply(new[] { T("t1", Dw("a", "A", 0)), T("t2", Dw("b", "B", 0)) });
         Assert.Equal(ActionStatus.Failed, One(rep, "a").Status);
-        Assert.Equal(ActionStatus.Skipped, One(rep, "b").Status);
-        Assert.Empty(r.Reg.Writes);
+        Assert.Equal(ActionStatus.Applied, One(rep, "b").Status);
+        Assert.True(r.Reg.Read(K, "B").Exists);
     }
 
     [Fact]
-    public void Apply_ServiceFailure_StopsRest()
+    public void Apply_ServiceFailure_ContinuesRest()
     {
         var r = new Rig();
         r.Svc.States["svc"] = new ServiceState(true, StartType.Automatic);
         r.Svc.FailWhen = (_, _) => true;
         var rep = r.Engine.Apply(new[] { T("t", Svc_("s", "svc", StartType.Disabled), Dw("b", "B", 0)) });
         Assert.Equal(ActionStatus.Failed, One(rep, "s").Status);
-        Assert.Equal(ActionStatus.Skipped, One(rep, "b").Status);
+        Assert.Equal(ActionStatus.Applied, One(rep, "b").Status);
     }
 
     [Fact]
